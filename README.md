@@ -2,8 +2,8 @@ This is a script to automatically install zsh, git, oh-my-zsh, and my config fil
 
 Simply type:
 
-`bash -c "$(curl -fsSL https://wstuckey.github.io/setup.sh)"`
+`bash -c "$(curl -fsSL https://wstuckey.github.io/dotfiles/setup.sh)"`
 
 Note: GitHub Pages adds HTML headers by default, which can break script execution. To fix, use raw.githack.com to proxy the file without headers:
 
-`bash -c "$(curl -fsSL https://raw.githack.com/wstuckey/wstuckey.github.io/main/setup.sh)"`
+`bash -c "$(curl -fsSL https://raw.githack.com/wstuckey/wstuckey.github.io/dotfiles/setup.sh)"`
