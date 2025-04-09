@@ -6,4 +6,4 @@ Simply type:
 
 Note: GitHub Pages adds HTML headers by default, which can break script execution. To fix, use raw.githack.com to proxy the file without headers:
 
-`bash -c "$(curl -fsSL https://raw.githack.com/yourusername/wstuckey.github.io/main/setup.sh)"`
+`bash -c "$(curl -fsSL https://raw.githack.com/wstuckey/wstuckey.github.io/main/setup.sh)"`
