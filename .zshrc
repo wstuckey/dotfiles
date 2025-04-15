@@ -189,7 +189,10 @@ unalias -a
 # System aliases
 alias aliases='lsaliases'
 alias refresh="source ~/.zshrc"
-alias zshrc="code ~/.zshrc"
+
+# Editor aliases
+alias nano='micro'
+alias zshrc="micro ~/.zshrc"
 
 # Node version management
 alias node18="nvm alias default v18.20.4 && nvm use default"
