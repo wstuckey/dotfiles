@@ -18,7 +18,7 @@
 # This ensures the user only has to enter it once
 SUDO_PASSWORD=""
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    read -sp "Enter your sudo password: " SDO_PASSWORD
+    read -sp "Enter your sudo password: " SUDO_PASSWORD  # Fixed typo here (was SDO_PASSWORD)
     echo
 fi
 
@@ -51,13 +51,13 @@ ln -sf ~/dotfiles/.zshrc ~/.zshrc
 # Change shell to Zsh (if not already)
 # Note: chsh typically requires password, using stored password if Linux
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo "$SUDO_PASSWORD" | sudo -S chsh -s $(which zsh)
+    echo "$SUDO_PASSWORD" | sudo -S chsh -s "$(which zsh)" "$(whoami)"
 else
-    chsh -s $(which zsh)
+    chsh -s "$(which zsh)"
 fi
 
 # Reload shell
-source ~/.zshrc
+exec zsh
 
 # Ask about adding GitHub keys
 read -p "Would you like to add GitHub public keys to your known_hosts? (y/n) " -n 1 -r
