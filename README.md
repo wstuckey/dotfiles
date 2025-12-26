@@ -20,6 +20,9 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/wstuckey/dotfiles/main/s
 | **OpenJDK 17** | Java runtime |
 | **Neovim** | Text editor (with full IDE config) |
 | **ripgrep + fd** | Fast search tools (for Telescope) |
+| **eza** | Modern replacement for `ls` and `tree` |
+| **zoxide** | Smarter `cd` that learns your habits |
+| **tmux** | Terminal multiplexer |
 | **NVM + Node.js** | Node version manager with LTS |
 
 ## Repository Structure
@@ -135,3 +138,17 @@ cd ~/dotfiles
 git pull
 source ~/.zshrc
 ```
+
+## Helpful Commands
+
+After setup, these commands are available:
+
+| Command | Description |
+|---------|-------------|
+| `aliases` | Show all available aliases |
+| `tmux-help` | Show tmux cheatsheet |
+| `z <path>` | Smart cd (zoxide) |
+| `zi` | Interactive directory picker |
+| `ll` | List files with details (eza) |
+| `lt` | Tree view (eza) |
+| `refresh` | Reload .zshrc |

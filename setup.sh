@@ -184,6 +184,58 @@ fi
 print_success "Neovim dependencies installed"
 
 # ------------------------------------------------------------------------------
+# eza (modern ls replacement)
+# ------------------------------------------------------------------------------
+
+print_section "Installing eza"
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # eza requires adding the repository on Ubuntu
+    if ! command_exists eza; then
+        sudo mkdir -p /etc/apt/keyrings
+        wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+        echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
+        sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+        sudo apt update
+        sudo apt install -y eza
+    fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    brew install eza
+fi
+
+print_success "eza installed"
+
+# ------------------------------------------------------------------------------
+# zoxide (smart cd replacement)
+# ------------------------------------------------------------------------------
+
+print_section "Installing zoxide"
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if ! command_exists zoxide; then
+        curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+    fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    brew install zoxide
+fi
+
+print_success "zoxide installed"
+
+# ------------------------------------------------------------------------------
+# tmux
+# ------------------------------------------------------------------------------
+
+print_section "Installing tmux"
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    sudo apt install -y tmux
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    brew install tmux
+fi
+
+print_success "tmux installed"
+
+# ------------------------------------------------------------------------------
 # Node.js via NVM
 # ------------------------------------------------------------------------------
 

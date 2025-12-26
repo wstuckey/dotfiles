@@ -112,10 +112,6 @@ alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
 
-# ls improvements
-alias ll="ls -lah"
-alias la="ls -A"
-
 # Safety
 alias rm="rm -i"
 alias cp="cp -i"
@@ -123,6 +119,81 @@ alias mv="mv -i"
 
 # rsync with progress
 alias rsync="rsync -az --info=progress2"
+
+# ----------------------------------------------
+# eza (modern ls replacement)
+# ----------------------------------------------
+
+if command -v eza &>/dev/null; then
+    alias ls="eza --icons --group-directories-first"
+    alias ll="eza -la --icons --group-directories-first"
+    alias la="eza -a --icons --group-directories-first"
+    alias lt="eza --tree --icons --group-directories-first"
+    alias tree="eza --tree --icons --group-directories-first"
+else
+    # Fallback to standard ls
+    alias ll="ls -lah"
+    alias la="ls -A"
+fi
+
+# Gentle reminders for old habits
+_ls_reminder() {
+    echo "💡 Tip: You're using eza! Try: ll, la, lt (tree view)" >&2
+}
+
+# ----------------------------------------------
+# zoxide (smart cd replacement)
+# ----------------------------------------------
+
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh)"
+    
+    # Alias cd to z for muscle memory, but keep cd available
+    alias cd="z"
+    
+    # Reminder function
+    _cd_reminder() {
+        echo "💡 Tip: Using zoxide! 'z' learns your frequent dirs. Try: z <partial-path>, zi (interactive)" >&2
+    }
+fi
+
+# ----------------------------------------------
+# tmux
+# ----------------------------------------------
+
+alias tmux-help='echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TMUX QUICK START
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Start:          tmux
+  New session:    tmux new -s <name>
+  Attach:         tmux attach -t <name>
+  List sessions:  tmux ls
+  Kill session:   tmux kill-session -t <name>
+
+  PREFIX KEY: Ctrl+b (then release, then command)
+
+  WINDOWS (tabs):
+    c   Create window
+    n   Next window
+    p   Previous window
+    ,   Rename window
+    &   Kill window
+    0-9 Switch to window #
+
+  PANES (splits):
+    %   Split vertical
+    \"   Split horizontal
+    ←→↑↓ Navigate panes
+    x   Kill pane
+    z   Toggle zoom (fullscreen pane)
+
+  OTHER:
+    d   Detach (exit but keep running)
+    ?   List all keybindings
+    :   Command mode
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"'
 
 # ----------------------------------------------
 # Platform-Specific Configuration
@@ -156,6 +227,50 @@ fi
 # ----------------------------------------------
 
 unsetopt correct_all  # Disable auto-correct
+
+# aliases command - show all custom aliases
+aliases() {
+    echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  AVAILABLE ALIASES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  EDITOR:
+    vi, vim        → nvim
+    zshrc          → Edit ~/.zshrc
+    sshconfig      → Edit ~/.ssh/config
+    refresh        → Reload .zshrc
+
+  FILES (eza):
+    ls             → eza with icons
+    ll             → Long list
+    la             → Show hidden
+    lt, tree       → Tree view
+
+  NAVIGATION (zoxide):
+    cd / z         → Smart cd (learns your dirs)
+    zi             → Interactive directory picker
+    z <partial>    → Jump to matching dir
+
+  SAFETY:
+    rm, cp, mv     → Interactive (confirm before overwrite)
+
+  UTILITIES:
+    rsync          → With progress
+    tmux-help      → Show tmux cheatsheet
+    update-all     → Update system packages
+
+  SHORTCUTS:
+    ..             → cd ..
+    ...            → cd ../..
+    ....           → cd ../../..
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    # Show work aliases if available
+    if typeset -f lsaliases > /dev/null; then
+        echo ""
+        echo "  Run 'lsaliases' for work-specific aliases"
+    fi
+}
 
 # thefuck integration (if installed)
 command -v thefuck &>/dev/null && eval "$(thefuck --alias)"
