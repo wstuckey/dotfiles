@@ -91,12 +91,22 @@ After installation:
 
 ## Customization
 
-The `.zshrc` automatically sources these files if they exist:
+The setup script will ask: **"Is this a work machine?"**
 
-- `~/.zshrc.work` — Work-specific configuration
-- `~/.zshrc.local` — Machine-specific overrides
+- **Yes** → Symlinks `.zshrc.work` for work-specific aliases (sites, pushDebug, etc.)
+- **No** → Only the main `.zshrc` is used
 
-This keeps the main config clean while allowing customization.
+You can also manually enable/disable work config:
+
+```bash
+# Enable work config
+ln -sf ~/dotfiles/.zshrc.work ~/.zshrc.work
+
+# Disable work config
+rm ~/.zshrc.work
+```
+
+Additional local overrides can go in `~/.zshrc.local` (not tracked in git).
 
 ## Manual Installation
 

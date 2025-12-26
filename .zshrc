@@ -229,6 +229,8 @@ fi
 unsetopt correct_all  # Disable auto-correct
 
 # aliases command - show all custom aliases
+# (unalias first in case .zshrc.work defined it)
+unalias aliases 2>/dev/null
 aliases() {
     echo "
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -272,5 +274,7 @@ aliases() {
     fi
 }
 
-# thefuck integration (if installed)
-command -v thefuck &>/dev/null && eval "$(thefuck --alias)"
+# thefuck integration (if installed and working)
+if command -v thefuck &>/dev/null; then
+    eval "$(thefuck --alias 2>/dev/null)" 2>/dev/null || true
+fi

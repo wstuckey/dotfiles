@@ -168,7 +168,7 @@ lsaliases() {
     echo "${CYAN}Node Versions:${NC}"
     echo "  node18, node20, node21, node22, node23"
 }
-alias aliases='lsaliases'
+# Note: main .zshrc provides the 'aliases' command
 
 # ----------------------------------------------
 # pyenv (if installed)

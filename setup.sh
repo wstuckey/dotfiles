@@ -286,6 +286,28 @@ ln -sf "$DOTFILES_DIR/.zshrc" "$REAL_HOME/.zshrc"
 [[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.zshrc"
 print_success "Symlinked .zshrc"
 
+# Ask about work configuration
+echo ""
+read -p "Is this a work machine? (y/n) " -n 1 -r
+echo ""
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ -f "$DOTFILES_DIR/.zshrc.work" ]]; then
+        ln -sf "$DOTFILES_DIR/.zshrc.work" "$REAL_HOME/.zshrc.work"
+        [[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.zshrc.work"
+        print_success "Symlinked .zshrc.work (work aliases enabled)"
+    else
+        print_warning ".zshrc.work not found in dotfiles"
+    fi
+else
+    # Remove work config if it exists (switching from work to personal)
+    if [[ -L "$REAL_HOME/.zshrc.work" ]]; then
+        rm "$REAL_HOME/.zshrc.work"
+        print_info "Removed .zshrc.work symlink"
+    fi
+    print_success "Skipped work configuration"
+fi
+
 # ------------------------------------------------------------------------------
 # Neovim Configuration
 # ------------------------------------------------------------------------------
