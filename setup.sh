@@ -212,7 +212,11 @@ print_section "Setting up dotfiles"
 
 # Determine the real user's home directory (handles sudo case)
 if [[ -n "$SUDO_USER" ]]; then
-    REAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        REAL_HOME=$(dscl . -read /Users/"$SUDO_USER" NFSHomeDirectory | awk '{print $2}')
+    else
+        REAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    fi
     REAL_USER="$SUDO_USER"
 else
     REAL_HOME="$HOME"
@@ -422,19 +426,34 @@ add_key_to_agent "id_work"
 print_section "Setting Zsh as default shell"
 
 # Get the current shell for the real user
-CURRENT_SHELL=$(getent passwd "$REAL_USER" | cut -d: -f7)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    CURRENT_SHELL=$(dscl . -read /Users/"$REAL_USER" UserShell | awk '{print $2}')
+else
+    CURRENT_SHELL=$(getent passwd "$REAL_USER" | cut -d: -f7)
+fi
 
 if [[ "$CURRENT_SHELL" != *"zsh"* ]]; then
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        chsh -s "$(which zsh)" "$REAL_USER"
-    else
+    ZSH_PATH="$(which zsh)"
+    print_info "Changing default shell to: $ZSH_PATH"
+    
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS - chsh requires interactive password, inform user
+        print_warning "macOS requires your password to change the default shell."
         if [[ -n "$SUDO_USER" ]]; then
-            sudo -u "$SUDO_USER" chsh -s "$(which zsh)"
+            sudo -u "$SUDO_USER" chsh -s "$ZSH_PATH"
         else
-            chsh -s "$(which zsh)"
+            chsh -s "$ZSH_PATH"
         fi
+    else
+        # Linux
+        chsh -s "$ZSH_PATH" "$REAL_USER"
     fi
-    print_success "Default shell changed to Zsh for $REAL_USER"
+    
+    if [[ $? -eq 0 ]]; then
+        print_success "Default shell changed to Zsh for $REAL_USER"
+    else
+        print_warning "Could not change shell automatically. Run manually: chsh -s $(which zsh)"
+    fi
 else
     print_success "Zsh is already the default shell"
 fi

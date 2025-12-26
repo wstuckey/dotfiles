@@ -8,6 +8,12 @@ Host *
 # Personal Hosts
 # ==============================================
 
+Host github.com
+  Hostname github.com
+  User git
+  IdentityFile ~/.ssh/id_personal
+  IdentitiesOnly yes
+
 Host ssh.ein-softworks.com
   Hostname ssh.ein-softworks.com
   Port 30141
