@@ -155,9 +155,22 @@ After setup, these commands are available:
 | Command | Description |
 |---------|-------------|
 | `aliases` | Show all available aliases |
+| `lsaliases` | Show work-specific aliases (if enabled) |
 | `tmux-help` | Show tmux cheatsheet |
 | `z <path>` | Smart cd (zoxide) |
 | `zi` | Interactive directory picker |
 | `ll` | List files with details (eza) |
 | `lt` | Tree view (eza) |
+| `dotfiles` | cd to ~/dotfiles |
+| `dotfiles-update` | Pull latest and refresh |
 | `refresh` | Reload .zshrc |
+
+## Automatic Update Check
+
+The shell automatically checks for dotfiles updates once per day (in the background, non-blocking). If updates are available, you'll see:
+
+```
+⚠️  Dotfiles update available! Run: cd ~/dotfiles && git pull && refresh
+```
+
+Or just run: `dotfiles-update`

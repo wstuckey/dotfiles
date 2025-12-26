@@ -4,32 +4,72 @@
 # ==============================================
 
 # ----------------------------------------------
+# Dotfiles Update Check (runs in background)
+# ----------------------------------------------
+
+_dotfiles_check_updates() {
+    local dotfiles_dir="$HOME/dotfiles"
+    local cache_file="$HOME/.cache/dotfiles_update_check"
+    local cache_max_age=86400  # 24 hours in seconds
+    
+    [[ -d "$dotfiles_dir/.git" ]] || return
+    
+    # Create cache directory if needed
+    mkdir -p "$HOME/.cache"
+    
+    # Check if we need to fetch (only once per day)
+    local now=$(date +%s)
+    local last_check=0
+    [[ -f "$cache_file" ]] && last_check=$(cat "$cache_file" 2>/dev/null | head -1)
+    
+    if (( now - last_check > cache_max_age )); then
+        # Fetch in background and check status
+        (
+            cd "$dotfiles_dir"
+            git fetch origin main 2>/dev/null
+            
+            local local_head=$(git rev-parse HEAD 2>/dev/null)
+            local remote_head=$(git rev-parse origin/main 2>/dev/null)
+            
+            echo "$now" > "$cache_file"
+            if [[ "$local_head" != "$remote_head" ]] && [[ -n "$remote_head" ]]; then
+                echo "outdated" >> "$cache_file"
+            else
+                echo "current" >> "$cache_file"
+            fi
+        ) &>/dev/null &
+    fi
+    
+    # Show warning if outdated (from previous check)
+    if [[ -f "$cache_file" ]] && grep -q "outdated" "$cache_file" 2>/dev/null; then
+        echo "⚠️  Dotfiles update available! Run: cd ~/dotfiles && git pull && refresh"
+    fi
+}
+
+# Run check (non-blocking)
+_dotfiles_check_updates
+
+# ----------------------------------------------
 # Oh My ZSH Configuration
 # ----------------------------------------------
 
 export ZSH="$HOME/.oh-my-zsh"
 
-# OMZ settings
 zstyle ':omz:update' mode auto
 ZSH_THEME="agnoster"
 ENABLE_CORRECTION="false"
 COMPLETION_WAITING_DOTS="true"
 
-# Plugins
 plugins=(git)
 
-# Initialize Oh My ZSH
 source "$ZSH/oh-my-zsh.sh"
 
 # ----------------------------------------------
 # Environment Variables
 # ----------------------------------------------
 
-# Editor
 export EDITOR='nvim'
 export VISUAL='nvim'
-
-# Local bin (pipx, etc.)
 export PATH="$HOME/.local/bin:$PATH"
 
 # Neovim (if installed to /opt)
@@ -41,58 +81,75 @@ if [[ -d "$HOME/Library/Android/sdk" ]]; then
 elif [[ -d "$HOME/Android/Sdk" ]]; then
     export ANDROID_HOME="$HOME/Android/Sdk"
 fi
-
-if [[ -n "$ANDROID_HOME" ]]; then
-    export PATH="$PATH:$ANDROID_HOME/platform-tools"
-    export PATH="$PATH:$ANDROID_HOME/tools"
-    export PATH="$PATH:$ANDROID_HOME/tools/bin"
-    export PATH="$PATH:$ANDROID_HOME/emulator"
-fi
+[[ -n "$ANDROID_HOME" ]] && export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator"
 
 # Java (detect installation)
 if [[ "$OSTYPE" == darwin* ]]; then
-    # macOS - check common locations
     if [[ -d "/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home" ]]; then
         export JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home"
     elif [[ -x "/usr/libexec/java_home" ]]; then
         export JAVA_HOME="$(/usr/libexec/java_home 2>/dev/null)" || true
     fi
 else
-    # Linux - check common locations
-    if [[ -d "/usr/lib/jvm/java-17-openjdk-amd64" ]]; then
-        export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
-    elif [[ -d "/usr/lib/jvm/java-17-openjdk" ]]; then
-        export JAVA_HOME="/usr/lib/jvm/java-17-openjdk"
-    fi
+    for jvm in "/usr/lib/jvm/java-17-openjdk-amd64" "/usr/lib/jvm/java-17-openjdk"; do
+        [[ -d "$jvm" ]] && { export JAVA_HOME="$jvm"; break; }
+    done
 fi
 
-# NVM
+# ----------------------------------------------
+# NVM (lazy loading for faster shell startup)
+# ----------------------------------------------
+
 export NVM_DIR="$HOME/.nvm"
-[[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
-[[ -s "$NVM_DIR/bash_completion" ]] && \. "$NVM_DIR/bash_completion"
 
-# ----------------------------------------------
-# SSH Keys (quiet, only if keys exist)
-# ----------------------------------------------
-
-load_ssh_key() {
-    local key="$1"
-    [[ -f "$key" ]] || return
-    
-    # Check if key is already loaded
-    ssh-add -l 2>/dev/null | grep -q "$(basename "$key")" && return
-    
-    if [[ "$OSTYPE" == darwin* ]]; then
-        ssh-add --apple-use-keychain "$key" 2>/dev/null
-    else
-        ssh-add "$key" 2>/dev/null
-    fi
+# Lazy load NVM - only initialize when first called
+nvm() {
+    unset -f nvm node npm npx
+    [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+    nvm "$@"
 }
 
-# Load keys if they exist
-load_ssh_key "$HOME/.ssh/id_ed25519"
-load_ssh_key "$HOME/.ssh/id_personal"
-load_ssh_key "$HOME/.ssh/id_work"
+node() {
+    unset -f nvm node npm npx
+    [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+    node "$@"
+}
+
+npm() {
+    unset -f nvm node npm npx
+    [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+    npm "$@"
+}
+
+npx() {
+    unset -f nvm node npm npx
+    [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
+    npx "$@"
+}
+
+# ----------------------------------------------
+# SSH Keys (quiet, only if agent running)
+# ----------------------------------------------
+
+_load_ssh_keys() {
+    # Only run if ssh-agent is available
+    command -v ssh-add &>/dev/null || return
+    
+    local keys=("$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_personal" "$HOME/.ssh/id_work")
+    local loaded=$(ssh-add -l 2>/dev/null)
+    
+    for key in "${keys[@]}"; do
+        [[ -f "$key" ]] || continue
+        echo "$loaded" | grep -q "$(basename "$key")" && continue
+        
+        if [[ "$OSTYPE" == darwin* ]]; then
+            ssh-add --apple-use-keychain "$key" 2>/dev/null
+        else
+            ssh-add "$key" 2>/dev/null
+        fi
+    done
+}
+_load_ssh_keys
 
 # ----------------------------------------------
 # Aliases
@@ -102,6 +159,8 @@ load_ssh_key "$HOME/.ssh/id_work"
 alias refresh="source ~/.zshrc"
 alias zshrc="$EDITOR ~/.zshrc"
 alias sshconfig="$EDITOR ~/.ssh/config"
+alias dotfiles="cd ~/dotfiles"
+alias dotfiles-update="cd ~/dotfiles && git pull && refresh"
 
 # Neovim
 alias vi="nvim"
@@ -131,15 +190,9 @@ if command -v eza &>/dev/null; then
     alias lt="eza --tree --icons --group-directories-first"
     alias tree="eza --tree --icons --group-directories-first"
 else
-    # Fallback to standard ls
     alias ll="ls -lah"
     alias la="ls -A"
 fi
-
-# Gentle reminders for old habits
-_ls_reminder() {
-    echo "💡 Tip: You're using eza! Try: ll, la, lt (tree view)" >&2
-}
 
 # ----------------------------------------------
 # zoxide (smart cd replacement)
@@ -147,14 +200,7 @@ _ls_reminder() {
 
 if command -v zoxide &>/dev/null; then
     eval "$(zoxide init zsh)"
-    
-    # Alias cd to z for muscle memory, but keep cd available
     alias cd="z"
-    
-    # Reminder function
-    _cd_reminder() {
-        echo "💡 Tip: Using zoxide! 'z' learns your frequent dirs. Try: z <partial-path>, zi (interactive)" >&2
-    }
 fi
 
 # ----------------------------------------------
@@ -175,8 +221,7 @@ alias tmux-help='echo "
 
   WINDOWS (tabs):
     c   Create window
-    n   Next window
-    p   Previous window
+    n/p Next/Previous window
     ,   Rename window
     &   Kill window
     0-9 Switch to window #
@@ -186,12 +231,11 @@ alias tmux-help='echo "
     \"   Split horizontal
     ←→↑↓ Navigate panes
     x   Kill pane
-    z   Toggle zoom (fullscreen pane)
+    z   Toggle zoom
 
   OTHER:
-    d   Detach (exit but keep running)
-    ?   List all keybindings
-    :   Command mode
+    d   Detach
+    ?   List keybindings
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 "'
 
@@ -200,36 +244,26 @@ alias tmux-help='echo "
 # ----------------------------------------------
 
 if [[ "$OSTYPE" == linux* ]]; then
-    # Linux-specific aliases
     alias update-all='sudo apt update && sudo apt upgrade -y && flatpak update -y 2>/dev/null; echo "Updates complete."'
     alias open="xdg-open"
-fi
-
-if [[ "$OSTYPE" == darwin* ]]; then
-    # macOS-specific aliases
+elif [[ "$OSTYPE" == darwin* ]]; then
     alias update-all="brew update && brew upgrade"
 fi
 
 # ----------------------------------------------
-# Work Configuration (optional, load if exists)
+# Work/Local Configuration (load if exists)
 # ----------------------------------------------
 
 [[ -f "$HOME/.zshrc.work" ]] && source "$HOME/.zshrc.work"
-
-# ----------------------------------------------
-# Local Configuration (optional, load if exists)
-# ----------------------------------------------
-
 [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 
 # ----------------------------------------------
 # Final Settings
 # ----------------------------------------------
 
-unsetopt correct_all  # Disable auto-correct
+unsetopt correct_all
 
 # aliases command - show all custom aliases
-# (unalias first in case .zshrc.work defined it)
 unalias aliases 2>/dev/null
 aliases() {
     echo "
@@ -251,30 +285,16 @@ aliases() {
   NAVIGATION (zoxide):
     cd / z         → Smart cd (learns your dirs)
     zi             → Interactive directory picker
-    z <partial>    → Jump to matching dir
 
-  SAFETY:
-    rm, cp, mv     → Interactive (confirm before overwrite)
+  DOTFILES:
+    dotfiles       → cd ~/dotfiles
+    dotfiles-update → Pull latest and refresh
 
   UTILITIES:
     rsync          → With progress
     tmux-help      → Show tmux cheatsheet
     update-all     → Update system packages
-
-  SHORTCUTS:
-    ..             → cd ..
-    ...            → cd ../..
-    ....           → cd ../../..
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
-    # Show work aliases if available
-    if typeset -f lsaliases > /dev/null; then
-        echo ""
-        echo "  Run 'lsaliases' for work-specific aliases"
-    fi
+    [[ $(typeset -f lsaliases) ]] && echo "\n  Run 'lsaliases' for work-specific aliases"
 }
-
-# thefuck integration (if installed and working)
-if command -v thefuck &>/dev/null; then
-    eval "$(thefuck --alias 2>/dev/null)" 2>/dev/null || true
-fi

@@ -1,20 +1,19 @@
 # ==============================================
 # Work Configuration
-# Place this file at ~/.zshrc.work
-# It will be automatically sourced by .zshrc
+# Sourced by .zshrc if ~/.zshrc.work exists
 # ==============================================
 
 # ----------------------------------------------
 # Site Configuration
 # ----------------------------------------------
 
-declare -A SITE_IPS=(
-    ["site1"]="10.28.24.71"
-    ["site2"]="10.28.24.72"
-    ["site3"]="10.28.24.73"
-    ["site4"]="10.28.24.74"
-    ["site5"]="10.28.24.75"
-    ["siteBryan"]="10.28.33.160"
+typeset -gA SITE_IPS=(
+    [site1]="10.28.24.71"
+    [site2]="10.28.24.72"
+    [site3]="10.28.24.73"
+    [site4]="10.28.24.74"
+    [site5]="10.28.24.75"
+    [siteBryan]="10.28.33.160"
 )
 
 # ----------------------------------------------
@@ -36,27 +35,20 @@ alias node22="nvm alias default v22.5.0 && nvm use default"
 alias node23="nvm alias default v23.11.1 && nvm use default"
 
 # ----------------------------------------------
-# Helper Functions
+# Core Functions
 # ----------------------------------------------
 
 # Generate license with modbus-server feature
-generate_license() {
-    [[ -z "$1" ]] && { echo "Usage: generate_license <serial_number>"; return 1; }
+genlic() {
+    [[ -z "$1" ]] && { echo "Usage: genlic <serial_number>"; return 1; }
     lickitung generate "$1" -o "$1.lic"
     lickitung edit --set-features modbus-server=1000 "$1.lic"
     lickitung edit --show-features "$1.lic"
     echo "License generated: $1.lic"
 }
-alias genlic='generate_license'
 
 # Push debug build to specified site
 pushDebug() {
-    # Usage:
-    #   pushDebug --site site1                            # Default syncdir "huiTest"
-    #   pushDebug --site site2 --syncdir huiBlah          # Custom syncdir
-    #   pushDebug --site site1 --clean                    # Clean output dir before build
-    #   pushDebug --site site2 --syncdir huiTest --clean  # Combined options
-
     local site="" syncdir="huiTest" clean_flag=false
 
     while [[ $# -gt 0 ]]; do
@@ -64,30 +56,41 @@ pushDebug() {
             --site) site="$2"; shift 2 ;;
             --syncdir) syncdir="$2"; shift 2 ;;
             --clean) clean_flag=true; shift ;;
-            *)
-                echo "Error: Unknown option $1"
-                echo "Usage: pushDebug --site <site> [--syncdir <dir>] [--clean]"
-                echo "Available sites: ${(k)SITE_IPS[@]}"
-                return 1
-                ;;
+            *) echo "Usage: pushDebug --site <site> [--syncdir <dir>] [--clean]"; return 1 ;;
         esac
     done
 
-    [[ -z "$site" ]] && { echo "Error: --site argument is required"; return 1; }
+    [[ -z "$site" ]] && { echo "Error: --site required. Available: ${(k)SITE_IPS[@]}"; return 1; }
     [[ -z "${SITE_IPS[$site]}" ]] && { echo "Error: Invalid site '$site'"; return 1; }
-    [[ "$syncdir" != hui* ]] && { echo "Error: syncdir must be prefixed with 'hui'"; return 1; }
+    [[ "$syncdir" != hui* ]] && { echo "Error: syncdir must start with 'hui'"; return 1; }
 
-    # Clean output directory if --clean flag is set
-    if $clean_flag; then
-        echo "Cleaning output directory: $HOME/output/debug/"
-        rm -rf "$HOME/output/debug/"*
-    fi
+    $clean_flag && { echo "Cleaning $HOME/output/debug/"; rm -rf "$HOME/output/debug/"*; }
 
-    local cmd="grunt"
-    $clean_flag && cmd+=" clean"
-    cmd+=" debugNoHelp rsync --output.ip=${SITE_IPS[$site]} --output.dir=$HOME/output/debug --output.syncdir=$syncdir"
+    local cmd="grunt${clean_flag:+ clean} debugNoHelp rsync --output.ip=${SITE_IPS[$site]} --output.dir=$HOME/output/debug --output.syncdir=$syncdir"
     echo "Executing: $cmd"
     eval "$cmd"
+}
+
+# Push SSH key to site
+site-pushSSH() {
+    local site="$1"
+    [[ -z "$site" ]] && { echo "Usage: site-pushSSH <site>"; return 1; }
+    [[ -z "${SITE_IPS[$site]}" ]] && { echo "Invalid site. Available: ${(k)SITE_IPS[@]}"; return 1; }
+    
+    local ip="${SITE_IPS[$site]}"
+    ssh-keygen -R "[$ip]:8022" 2>/dev/null
+    ssh-copy-id -o PreferredAuthentications=password -o PubkeyAuthentication=no -p 8022 "root@$ip"
+}
+
+# Push rsync binary to site
+site-pushRsync() {
+    local site="$1"
+    [[ -z "$site" ]] && { echo "Usage: site-pushRsync <site>"; return 1; }
+    [[ -z "${SITE_IPS[$site]}" ]] && { echo "Invalid site. Available: ${(k)SITE_IPS[@]}"; return 1; }
+    
+    scp -P 8022 ./rsync "$site:/usr/bin"
+    scp -P 8022 ./rsyncLibs/libattr.so ./rsyncLibs/libattr.so.1 ./rsyncLibs/libattr.so.1.1.0 "$site:/usr/lib"
+    ssh "$site" chmod u+rwx /usr/bin/rsync
 }
 
 # ----------------------------------------------
@@ -97,97 +100,52 @@ pushDebug() {
 alias sync='hui-sync-manager.sh'
 alias hui-sync-manager='hui-sync-manager.sh'
 alias uidd_builder='synchrony_uidd_constructor.py'
-alias mass-hui-revert='svn revert -R . && cd source/base/ && svn revert -R . && cd ../evoxobj/ && svn revert -R . && cd ../hydra/ && svn revert -R . && cd ../.. '
-
-# Documentation
+alias mass-hui-revert='svn revert -R . && cd source/base/ && svn revert -R . && cd ../evoxobj/ && svn revert -R . && cd ../hydra/ && svn revert -R . && cd ../..'
 alias buildDocs="grunt docs --output.dir=$HOME/output/docs/ --naturaldocs.bin=$HOME/ND/NaturalDocs"
-
-# ----------------------------------------------
-# Site Aliases
-# ----------------------------------------------
-
-# Helper to generate pushSSH command
-_site_push_ssh() {
-    local ip="$1"
-    ssh-keygen -R "[$ip]:8022"
-    ssh-copy-id -o PreferredAuthentications=password -o PubkeyAuthentication=no -p 8022 "root@$ip"
-}
-
-# Site 1
-alias site1-pushSSH='_site_push_ssh 10.28.24.71'
-alias site1-pushRsync="scp -P 8022 ./rsync site1:/usr/bin && scp -P 8022 ./rsyncLibs/libattr.so ./rsyncLibs/libattr.so.1 ./rsyncLibs/libattr.so.1.1.0 site1:/usr/lib && ssh site1 chmod u+rwx /usr/bin/rsync"
-
-# Site 2
-alias site2-pushSSH='_site_push_ssh 10.28.24.72'
-alias site2-pushRsync="scp -P 8022 ./rsync site2:/usr/bin && scp -P 8022 ./rsyncLibs/libattr.so ./rsyncLibs/libattr.so.1 ./rsyncLibs/libattr.so.1.1.0 site2:/usr/lib && ssh site2 chmod u+rwx /usr/bin/rsync"
-
-# Site 3
-alias site3-pushSSH='_site_push_ssh 10.28.24.73'
-alias site3-pushRsync="scp -P 8022 ./rsync site3:/usr/bin && scp -P 8022 ./rsyncLibs/libattr.so ./rsyncLibs/libattr.so.1 ./rsyncLibs/libattr.so.1.1.0 site3:/usr/lib && ssh site3 chmod u+rwx /usr/bin/rsync"
-
-# Site 4
-alias site4-pushSSH='_site_push_ssh 10.28.24.74'
-alias site4-pushRsync="scp -P 8022 ./rsync site4:/usr/bin && scp -P 8022 ./rsyncLibs/libattr.so ./rsyncLibs/libattr.so.1 ./rsyncLibs/libattr.so.1.1.0 site4:/usr/lib && ssh site4 chmod u+rwx /usr/bin/rsync"
-
-# Site 5
-alias site5-pushSSH='_site_push_ssh 10.28.24.75'
-alias site5-pushRsync="scp -P 8022 ./rsync site5:/usr/bin && scp -P 8022 ./rsyncLibs/libattr.so ./rsyncLibs/libattr.so.1 ./rsyncLibs/libattr.so.1.1.0 site5:/usr/lib && ssh site5 chmod u+rwx /usr/bin/rsync"
-
-# Site Bryan
-alias siteBryan-pushSSH='_site_push_ssh 10.28.33.160'
-alias siteBryan-pushRsync="scp -P 8022 ./rsync siteBryan:/usr/bin && scp -P 8022 ./rsyncLibs/libattr.so ./rsyncLibs/libattr.so.1 ./rsyncLibs/libattr.so.1.1.0 siteBryan:/usr/lib && ssh siteBryan chmod u+rwx /usr/bin/rsync"
 
 # ----------------------------------------------
 # List Work Aliases
 # ----------------------------------------------
 
 lsaliases() {
-    local CYAN=$'\e[0;36m'
-    local YELLOW=$'\e[0;33m'
-    local NC=$'\e[0m'
+    echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  WORK ALIASES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SITES: ${(k)SITE_IPS[@]}
 
-    echo "${CYAN}Site Aliases:${NC}"
-    echo "  site1-pushSSH, site1-pushRsync"
-    echo "  site2-pushSSH, site2-pushRsync"
-    echo "  site3-pushSSH, site3-pushRsync"
-    echo "  site4-pushSSH, site4-pushRsync"
-    echo "  site5-pushSSH, site5-pushRsync"
-    echo "  siteBryan-pushSSH, siteBryan-pushRsync"
-    echo ""
-    echo "${CYAN}Functions:${NC}"
-    echo "  pushDebug --site <site> [--syncdir <dir>] [--clean]"
-    echo "  genlic <serial>"
-    echo ""
-    echo "${CYAN}Utilities:${NC}"
-    echo "  sync, hui-sync-manager, uidd_builder"
-    echo "  mass-hui-revert, buildDocs"
-    echo ""
-    echo "${CYAN}Navigation:${NC}"
-    echo "  cd-feature, cd-trunk, cd-doctor"
-    echo ""
-    echo "${CYAN}Node Versions:${NC}"
-    echo "  node18, node20, node21, node22, node23"
+  SITE COMMANDS:
+    site-pushSSH <site>    Push SSH key
+    site-pushRsync <site>  Push rsync binary
+    pushDebug --site <s>   Push debug build
+
+  UTILITIES:
+    genlic <serial>        Generate license
+    sync                   hui-sync-manager
+    mass-hui-revert        Revert all SVN
+    buildDocs              Build documentation
+
+  NAVIGATION:
+    cd-feature, cd-trunk, cd-doctor
+
+  NODE:
+    node18, node20, node21, node22, node23
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
-# Note: main .zshrc provides the 'aliases' command
 
 # ----------------------------------------------
-# pyenv (if installed)
+# Optional Integrations
 # ----------------------------------------------
 
+# pyenv
 if [[ -d "$HOME/.pyenv" ]]; then
     export PYENV_ROOT="$HOME/.pyenv"
-    command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+    [[ ":$PATH:" != *":$PYENV_ROOT/bin:"* ]] && export PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
 fi
 
-# ----------------------------------------------
-# iTerm2 Integration (macOS)
-# ----------------------------------------------
+# iTerm2 (macOS)
+[[ -e "$HOME/.iterm2_shell_integration.zsh" ]] && source "$HOME/.iterm2_shell_integration.zsh"
 
-[[ -e "${HOME}/.iterm2_shell_integration.zsh" ]] && source "${HOME}/.iterm2_shell_integration.zsh"
-
-# ----------------------------------------------
-# Godot (if installed)
-# ----------------------------------------------
-
+# Godot
 [[ -d "$HOME/GameDev/Godot" ]] && alias godot="$HOME/GameDev/Godot/Godot_mono.app/Contents/MacOS/Godot"
