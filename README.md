@@ -16,7 +16,6 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/wstuckey/dotfiles/main/s
 | **Oh My Zsh** | Zsh framework with plugins |
 | **Git** | Version control |
 | **Python + pipx** | Python and isolated package manager |
-| **thefuck** | Command correction |
 | **OpenJDK 17** | Java runtime |
 | **Neovim** | Text editor (with full IDE config) |
 | **ripgrep + fd** | Fast search tools (for Telescope) |

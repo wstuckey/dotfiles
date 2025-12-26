@@ -115,18 +115,6 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# thefuck
-# ------------------------------------------------------------------------------
-
-print_section "Installing thefuck"
-
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    pipx install thefuck || print_warning "thefuck may already be installed"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    brew install thefuck
-fi
-
-# ------------------------------------------------------------------------------
 # OpenJDK
 # ------------------------------------------------------------------------------
 
