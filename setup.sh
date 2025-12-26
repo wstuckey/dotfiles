@@ -3,162 +3,461 @@
 # setup.sh - System setup and configuration script
 #
 # This script automates the setup of a development environment including:
-# - Package manager installation (Homebrew for Mac, apt for Linux)
-# - Core tools installation (Zsh, Git, cURL)
-# - Oh My Zsh configuration
-# - Rust toolchain installation
-# - Micro editor installation
-# - Dotfiles setup
-# - Optional GitHub SSH keys configuration
-# - Additional tools: thefuck, openjdk, neovim, node+nvm, python, pipx
+# - Package manager setup (Homebrew for Mac, apt for Linux)
+# - Core tools: Zsh, Git, cURL
+# - Oh My Zsh
+# - Python + pipx
+# - Node.js via NVM
+# - OpenJDK 17
+# - Neovim
+# - SSH keys and config
+# - Dotfiles symlinks
 #
-# The script is designed to work on both macOS and Linux systems.
-# On Linux systems, sudo privileges are required but only requested once.
+# Usage:
+#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/wstuckey/dotfiles/main/setup.sh)"
 
-# Store sudo password at the beginning of the script if needed
-# This ensures the user only has to enter it once
-SUDO_PASSWORD=""
+set -e  # Exit on error
+
+# ------------------------------------------------------------------------------
+# Helper Functions
+# ------------------------------------------------------------------------------
+
+print_section() {
+    echo ""
+    echo "======================================"
+    echo "$1"
+    echo "======================================"
+}
+
+print_info() {
+    echo "→ $1"
+}
+
+print_success() {
+    echo "✓ $1"
+}
+
+print_warning() {
+    echo "⚠ $1"
+}
+
+command_exists() {
+    command -v "$1" &> /dev/null
+}
+
+# ------------------------------------------------------------------------------
+# Sudo Setup (Linux only)
+# ------------------------------------------------------------------------------
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    read -sp "Enter your sudo password: " SUDO_PASSWORD
-    echo
+    echo "This script requires sudo privileges for package installation."
+    sudo -v
+    
+    # Keep sudo alive throughout the script
+    while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 fi
 
-# If Mac, install Homebrew
+# ------------------------------------------------------------------------------
+# Package Manager Setup
+# ------------------------------------------------------------------------------
+
+print_section "Setting up package manager"
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$(/opt/homebrew/bin/brew shellenv)"  # Add Homebrew to PATH
+    if ! command_exists brew; then
+        print_info "Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    else
+        print_success "Homebrew already installed"
+    fi
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    print_info "Updating apt..."
+    sudo apt update
 fi
 
-# Install Zsh, Git, and (if on linux) cURL
+# ------------------------------------------------------------------------------
+# Core Tools
+# ------------------------------------------------------------------------------
+
+print_section "Installing core tools (Zsh, Git, cURL)"
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  # Use the stored password for all sudo commands
-  echo "$SUDO_PASSWORD" | sudo -S apt update && echo "$SUDO_PASSWORD" | sudo -S apt install -y zsh git curl
+    sudo apt install -y zsh git curl
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  brew install zsh git
+    brew install zsh git curl
 fi
 
-# Install Oh My Zsh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+# ------------------------------------------------------------------------------
+# Oh My Zsh
+# ------------------------------------------------------------------------------
 
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -y
+print_section "Installing Oh My Zsh"
 
-# Install Micro
-curl https://getmic.ro | bash
+if [[ -d "$HOME/.oh-my-zsh" ]]; then
+    print_success "Oh My Zsh already installed"
+else
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+fi
 
-# Install Python and pipx
+# ------------------------------------------------------------------------------
+# Python & pipx
+# ------------------------------------------------------------------------------
+
+print_section "Installing Python and pipx"
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  echo "$SUDO_PASSWORD" | sudo -S apt install -y python3 python3-pip python3-venv
-  python3 -m pip install --user pipx
-  python3 -m pipx ensurepath
+    sudo apt install -y python3 python3-pip python3-venv pipx
+    pipx ensurepath
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  brew install python
-  python3 -m pip install --user pipx
-  python3 -m pipx ensurepath
+    brew install python pipx
+    pipx ensurepath
 fi
 
-# TODO FIX THIS
+# ------------------------------------------------------------------------------
+# thefuck
+# ------------------------------------------------------------------------------
 
-# Install thefuck
+print_section "Installing thefuck"
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  echo "$SUDO_PASSWORD" | sudo -S apt install -y python3 python3-pip python3-venv
-  python3 -m pip install --user pipx
-  python3 -m pipx ensurepath
+    pipx install thefuck || print_warning "thefuck may already be installed"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  brew install thefuck
+    brew install thefuck
 fi
 
-# Install OpenJDK
+# ------------------------------------------------------------------------------
+# OpenJDK
+# ------------------------------------------------------------------------------
+
+print_section "Installing OpenJDK 17"
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  echo "$SUDO_PASSWORD" | sudo -S apt install -y openjdk-17-jdk
+    sudo apt install -y openjdk-17-jdk
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  brew install openjdk@17
-  sudo ln -sfn /usr/local/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+    brew install openjdk@17
+    sudo ln -sfn "$(brew --prefix)/opt/openjdk@17/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk-17.jdk
 fi
 
-# Install Neovim
+# ------------------------------------------------------------------------------
+# Neovim
+# ------------------------------------------------------------------------------
+
+print_section "Installing Neovim"
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  echo "$SUDO_PASSWORD" | sudo -S apt install -y neovim
+    NVIM_VERSION="v0.10.2"
+    if [[ -d "/opt/nvim" ]]; then
+        print_success "Neovim already installed"
+    else
+        print_info "Downloading Neovim ${NVIM_VERSION}..."
+        curl -LO "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux64.tar.gz"
+        sudo rm -rf /opt/nvim
+        sudo tar -C /opt -xzf nvim-linux64.tar.gz
+        sudo mv /opt/nvim-linux64 /opt/nvim
+        rm nvim-linux64.tar.gz
+        print_success "Neovim installed to /opt/nvim"
+    fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  brew install neovim
+    if command_exists nvim; then
+        print_success "Neovim already installed"
+    else
+        brew install neovim
+        print_success "Neovim installed via Homebrew"
+    fi
 fi
 
-# Install Node + NVM
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+# Install Neovim dependencies
+print_info "Installing Neovim dependencies..."
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # ripgrep and fd for Telescope
+    sudo apt install -y ripgrep fd-find
+    # Create fd symlink (Ubuntu names it fdfind)
+    if [[ -x "$(command -v fdfind)" ]] && [[ ! -x "$(command -v fd)" ]]; then
+        sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
+    fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    brew install ripgrep fd
+fi
+
+print_success "Neovim dependencies installed"
+
+# ------------------------------------------------------------------------------
+# Node.js via NVM
+# ------------------------------------------------------------------------------
+
+print_section "Installing NVM and Node.js"
+
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
-# Install latest LTS version of Node
+if [[ -d "$NVM_DIR" ]]; then
+    print_success "NVM already installed"
+else
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+fi
+
+# Load NVM
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+print_info "Installing Node.js LTS..."
 nvm install --lts
 nvm alias default 'lts/*'
 
-# Clone dotfiles and symlink .zshrc
-git clone https://github.com/wstuckey/dotfiles.git ~/dotfiles
-ln -sf ~/dotfiles/.zshrc ~/.zshrc
+# ------------------------------------------------------------------------------
+# Dotfiles
+# ------------------------------------------------------------------------------
 
-# Change shell to Zsh (if not already)
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo "$SUDO_PASSWORD" | sudo -S chsh -s "$(which zsh)" "$(whoami)"
+print_section "Setting up dotfiles"
+
+# Determine the real user's home directory (handles sudo case)
+if [[ -n "$SUDO_USER" ]]; then
+    REAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    REAL_USER="$SUDO_USER"
 else
-    chsh -s "$(which zsh)"
+    REAL_HOME="$HOME"
+    REAL_USER="$(whoami)"
 fi
 
-# Reload shell to ensure all changes take effect
-exec zsh
+DOTFILES_DIR="$REAL_HOME/dotfiles"
 
-# Ask about adding GitHub keys
-read -p "Would you like to add GitHub public keys to your known_hosts? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    read -p "Enter GitHub username: " github_username
-    KNOWN_HOSTS_FILE="$HOME/.ssh/known_hosts"
-    TMP_FILE=$(mktemp)
-    
-    # Create .ssh directory if it doesn't exist
-    mkdir -p ~/.ssh
-    chmod 700 ~/.ssh
-    
-    # Get SSH keys from GitHub
-    echo "Fetching SSH keys for GitHub user $github_username..."
-    curl -s "https://github.com/$github_username.keys" > "$TMP_FILE"
-    
-    # Check if we got any keys
-    if [ ! -s "$TMP_FILE" ]; then
-        echo "No SSH keys found for user $github_username or failed to fetch."
-        rm "$TMP_FILE"
-        exit 1
+if [[ -d "$DOTFILES_DIR" ]]; then
+    print_info "Dotfiles directory already exists, pulling latest..."
+    cd "$DOTFILES_DIR" && git pull || true
+else
+    print_info "Cloning dotfiles..."
+    git clone https://github.com/wstuckey/dotfiles.git "$DOTFILES_DIR"
+    # Fix ownership if running as root
+    [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$DOTFILES_DIR"
+fi
+
+# Backup existing .zshrc if it exists and isn't a symlink
+if [[ -f "$REAL_HOME/.zshrc" && ! -L "$REAL_HOME/.zshrc" ]]; then
+    print_info "Backing up existing .zshrc to .zshrc.backup"
+    mv "$REAL_HOME/.zshrc" "$REAL_HOME/.zshrc.backup"
+fi
+
+# Create symlink
+ln -sf "$DOTFILES_DIR/.zshrc" "$REAL_HOME/.zshrc"
+[[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.zshrc"
+print_success "Symlinked .zshrc"
+
+# ------------------------------------------------------------------------------
+# Neovim Configuration
+# ------------------------------------------------------------------------------
+
+print_section "Setting up Neovim configuration"
+
+NVIM_CONFIG_DIR="$REAL_HOME/.config/nvim"
+DOTFILES_NVIM_DIR="$DOTFILES_DIR/nvim"
+
+# Create ~/.config if it doesn't exist
+mkdir -p "$REAL_HOME/.config"
+[[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.config"
+
+if [[ -d "$DOTFILES_NVIM_DIR" ]]; then
+    # Backup existing nvim config if it exists and isn't a symlink
+    if [[ -d "$NVIM_CONFIG_DIR" && ! -L "$NVIM_CONFIG_DIR" ]]; then
+        print_info "Backing up existing Neovim config to nvim.backup"
+        mv "$NVIM_CONFIG_DIR" "$REAL_HOME/.config/nvim.backup"
+    elif [[ -L "$NVIM_CONFIG_DIR" ]]; then
+        # Remove existing symlink
+        rm "$NVIM_CONFIG_DIR"
     fi
     
-    # Process each key
-    while read -r key; do
-        if [ -n "$key" ]; then
-            # Format the key for known_hosts: github.com + key
-            formatted_entry="github.com ssh-rsa $key"
-            
-            # Check if the key already exists in known_hosts
-            if grep -Fq "$key" "$KNOWN_HOSTS_FILE" 2>/dev/null; then
-                echo "Key already exists in known_hosts:"
-                echo "$key"
-            else
-                echo "Adding key to known_hosts:"
-                echo "$key"
-                echo "$formatted_entry" >> "$KNOWN_HOSTS_FILE"
-            fi
-        fi
-    done < "$TMP_FILE"
+    # Create symlink
+    ln -sf "$DOTFILES_NVIM_DIR" "$NVIM_CONFIG_DIR"
+    [[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$NVIM_CONFIG_DIR"
+    print_success "Symlinked Neovim config"
     
-    # Clean up
-    rm "$TMP_FILE"
+    # Install plugins on first run (as the real user, not root)
+    print_info "Installing Neovim plugins (this may take a moment)..."
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        NVIM_CMD="/opt/nvim/bin/nvim"
+    else
+        NVIM_CMD="nvim"
+    fi
     
-    # Set proper permissions for known_hosts
-    chmod 644 ~/.ssh/known_hosts
-    
-    echo "GitHub keys have been added to $KNOWN_HOSTS_FILE"
+    if [[ -n "$SUDO_USER" ]]; then
+        sudo -u "$SUDO_USER" "$NVIM_CMD" --headless "+Lazy! sync" +qa 2>/dev/null || true
+    else
+        "$NVIM_CMD" --headless "+Lazy! sync" +qa 2>/dev/null || true
+    fi
+    print_success "Neovim plugins installed"
+else
+    print_warning "Neovim config not found in dotfiles. Skipping."
+    echo "  Expected: $DOTFILES_NVIM_DIR"
+    echo "  Copy your nvim config there and re-run setup."
 fi
 
-# Clear the stored password for security
-SUDO_PASSWORD=""
+# ------------------------------------------------------------------------------
+# SSH Setup
+# ------------------------------------------------------------------------------
 
-# finito!
-echo "Done! Enjoy your new environment."
+print_section "Setting up SSH"
+
+SSH_DIR="$REAL_HOME/.ssh"
+DOTFILES_SSH_DIR="$DOTFILES_DIR/ssh"
+
+# Create ~/.ssh with proper permissions
+mkdir -p "$SSH_DIR"
+chmod 700 "$SSH_DIR"
+[[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$SSH_DIR"
+
+# Symlink SSH config
+if [[ -f "$DOTFILES_SSH_DIR/config" ]]; then
+    if [[ -f "$SSH_DIR/config" && ! -L "$SSH_DIR/config" ]]; then
+        print_info "Backing up existing SSH config"
+        mv "$SSH_DIR/config" "$SSH_DIR/config.backup"
+    fi
+    ln -sf "$DOTFILES_SSH_DIR/config" "$SSH_DIR/config"
+    chmod 600 "$SSH_DIR/config"
+    [[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$SSH_DIR/config"
+    print_success "Symlinked SSH config"
+fi
+
+# Check for SSH keys
+SSH_KEYS_NEEDED=()
+[[ ! -f "$DOTFILES_SSH_DIR/id_personal" ]] && SSH_KEYS_NEEDED+=("id_personal")
+[[ ! -f "$DOTFILES_SSH_DIR/id_personal.pub" ]] && SSH_KEYS_NEEDED+=("id_personal.pub")
+[[ ! -f "$DOTFILES_SSH_DIR/id_work" ]] && SSH_KEYS_NEEDED+=("id_work")
+[[ ! -f "$DOTFILES_SSH_DIR/id_work.pub" ]] && SSH_KEYS_NEEDED+=("id_work.pub")
+
+if [[ ${#SSH_KEYS_NEEDED[@]} -gt 0 ]]; then
+    echo ""
+    print_warning "SSH keys not found in dotfiles!"
+    echo ""
+    echo "Please copy your SSH keys to: $DOTFILES_SSH_DIR/"
+    echo ""
+    echo "Required files:"
+    for key in "${SSH_KEYS_NEEDED[@]}"; do
+        echo "  - $key"
+    done
+    echo ""
+    echo "Example:"
+    echo "  cp ~/.ssh/id_personal $DOTFILES_SSH_DIR/"
+    echo "  cp ~/.ssh/id_personal.pub $DOTFILES_SSH_DIR/"
+    echo "  cp ~/.ssh/id_work $DOTFILES_SSH_DIR/"
+    echo "  cp ~/.ssh/id_work.pub $DOTFILES_SSH_DIR/"
+    echo ""
+    read -p "Press Enter once you've added the keys (or 's' to skip): " -r
+    echo ""
+    
+    if [[ ! $REPLY =~ ^[Ss]$ ]]; then
+        # Re-check for keys
+        SSH_KEYS_NEEDED=()
+        [[ ! -f "$DOTFILES_SSH_DIR/id_personal" ]] && SSH_KEYS_NEEDED+=("id_personal")
+        [[ ! -f "$DOTFILES_SSH_DIR/id_work" ]] && SSH_KEYS_NEEDED+=("id_work")
+        
+        if [[ ${#SSH_KEYS_NEEDED[@]} -gt 0 ]]; then
+            print_warning "Keys still missing. Skipping SSH key setup."
+        fi
+    fi
+fi
+
+# Copy and set up SSH keys
+setup_ssh_key() {
+    local key_name="$1"
+    local src="$DOTFILES_SSH_DIR/$key_name"
+    local dest="$SSH_DIR/$key_name"
+    
+    if [[ -f "$src" ]]; then
+        cp "$src" "$dest"
+        chmod 600 "$dest"
+        [[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$dest"
+        print_success "Installed $key_name"
+        return 0
+    fi
+    return 0  # Return success even if key doesn't exist
+}
+
+setup_ssh_pubkey() {
+    local key_name="$1"
+    local src="$DOTFILES_SSH_DIR/$key_name"
+    local dest="$SSH_DIR/$key_name"
+    
+    if [[ -f "$src" ]]; then
+        cp "$src" "$dest"
+        chmod 644 "$dest"
+        [[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$dest"
+        print_success "Installed $key_name"
+    fi
+    return 0  # Always return success
+}
+
+# Install keys (skip silently if not present)
+setup_ssh_key "id_personal"
+setup_ssh_pubkey "id_personal.pub"
+setup_ssh_key "id_work"
+setup_ssh_pubkey "id_work.pub"
+
+# Start ssh-agent and add keys
+print_info "Adding keys to SSH agent..."
+
+# Ensure ssh-agent is running
+if [[ -z "$SSH_AUTH_SOCK" ]]; then
+    eval "$(ssh-agent -s)" > /dev/null
+fi
+
+# Add keys to agent (silently skip if not present)
+add_key_to_agent() {
+    local key="$SSH_DIR/$1"
+    [[ -f "$key" ]] || return 0  # Return success if key doesn't exist
+    
+    if [[ "$OSTYPE" == darwin* ]]; then
+        ssh-add --apple-use-keychain "$key" 2>/dev/null && print_success "Added $1 to SSH agent (with keychain)"
+    else
+        ssh-add "$key" 2>/dev/null && print_success "Added $1 to SSH agent"
+    fi
+    return 0  # Always return success
+}
+
+add_key_to_agent "id_personal"
+add_key_to_agent "id_work"
+
+# ------------------------------------------------------------------------------
+# Change Default Shell
+# ------------------------------------------------------------------------------
+
+print_section "Setting Zsh as default shell"
+
+# Get the current shell for the real user
+CURRENT_SHELL=$(getent passwd "$REAL_USER" | cut -d: -f7)
+
+if [[ "$CURRENT_SHELL" != *"zsh"* ]]; then
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        chsh -s "$(which zsh)" "$REAL_USER"
+    else
+        if [[ -n "$SUDO_USER" ]]; then
+            sudo -u "$SUDO_USER" chsh -s "$(which zsh)"
+        else
+            chsh -s "$(which zsh)"
+        fi
+    fi
+    print_success "Default shell changed to Zsh for $REAL_USER"
+else
+    print_success "Zsh is already the default shell"
+fi
+
+# ------------------------------------------------------------------------------
+# Done
+# ------------------------------------------------------------------------------
+
+print_section "Setup Complete!"
+
+echo ""
+echo "Next steps:"
+echo "  1. Restart your terminal or run: exec zsh"
+echo "  2. Verify SSH keys: ssh-add -l"
+echo "  3. Test SSH connections:"
+echo "       ssh -T git@github.com"
+echo "       ssh -T git@git.ein-softworks.com"
+echo ""
+
+# Show any warnings
+if [[ ! -f "$SSH_DIR/id_personal" ]] || [[ ! -f "$SSH_DIR/id_work" ]]; then
+    print_warning "Some SSH keys were not installed. Add them to $DOTFILES_SSH_DIR/ and re-run setup."
+fi
+
+echo ""
+echo "Enjoy your new environment!"

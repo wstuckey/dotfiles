@@ -1,0 +1,17 @@
+# SSH private keys - NEVER commit these
+ssh/id_work
+ssh/id_personal
+ssh/id_ed25519
+ssh/id_rsa
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Local overrides
+.zshrc.local

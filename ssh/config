@@ -1,0 +1,147 @@
+Host *
+  AddKeysToAgent yes
+  # IgnoreUnknown makes SSH skip options it doesn't recognize (e.g., UseKeychain on Linux)
+  IgnoreUnknown UseKeychain
+  UseKeychain yes
+
+# ==============================================
+# Personal Hosts
+# ==============================================
+
+Host ssh.ein-softworks.com
+  Hostname ssh.ein-softworks.com
+  Port 30141
+  User harrison
+  IdentityFile ~/.ssh/id_personal
+
+Host ssh.maybe.zone
+  Hostname ssh.maybe.zone
+  Port 22
+  User harrison
+  IdentityFile ~/.ssh/id_personal
+
+# ==============================================
+# Work Sites
+# ==============================================
+
+Host site1
+  Hostname 10.28.24.71
+  Port 8022
+  User root
+  IdentityFile ~/.ssh/id_work
+
+Host site2
+  Hostname 10.28.24.72
+  Port 8022
+  User root
+  IdentityFile ~/.ssh/id_work
+
+Host site3
+  Hostname 10.28.24.73
+  Port 8022
+  User root
+  IdentityFile ~/.ssh/id_work
+
+Host site4
+  Hostname 10.28.24.74
+  Port 8022
+  User root
+  IdentityFile ~/.ssh/id_work
+
+Host site5
+  Hostname 10.28.24.75
+  Port 8022
+  User root
+  IdentityFile ~/.ssh/id_work
+
+Host siteBryan
+  Hostname 10.28.33.160
+  Port 8022
+  User root
+  IdentityFile ~/.ssh/id_work
+
+Host scott104
+  Hostname 10.28.6.104
+  Port 8022
+  User root
+  IdentityFile ~/.ssh/id_work
+
+# ==============================================
+# Build Machines
+# ==============================================
+
+Host new-scbuildmachine
+  HostName 10.28.18.100
+  User root
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host sectoolsmachine
+  HostName 10.28.18.190
+  User root
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host old-scbuildmachine
+  HostName 10.28.22.29
+  User wstuckey
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host old-scbuildmachine1
+  HostName 10.28.22.27
+  User wstuckey
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+# ==============================================
+# Virtual Machines
+# ==============================================
+
+Host vm-scbuild
+  HostName 10.28.18.101
+  User vmadmin
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host vm-secbuild
+  HostName 10.28.18.102
+  User vmadmin
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host vm-mhbuild
+  HostName 10.28.18.103
+  User vmadmin
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host vm-s400build
+  HostName 10.28.18.104
+  User vmadmin
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host vm-coverity
+  HostName 10.28.18.191
+  User vmadmin
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host vm-codeinsight
+  HostName 10.28.18.192
+  User vmadmin
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host vm-embeddedsandbox
+  HostName 10.28.18.201
+  User vmadmin
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host vm-embeddedsandbox-jake
+  HostName 10.28.18.201
+  User jake
+  Port 22
+  IdentityFile ~/.ssh/id_work
