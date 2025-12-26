@@ -58,6 +58,22 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 fi
 
 # ------------------------------------------------------------------------------
+# Determine Real User (handles sudo case)
+# ------------------------------------------------------------------------------
+
+if [[ -n "$SUDO_USER" ]]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        REAL_HOME=$(dscl . -read /Users/"$SUDO_USER" NFSHomeDirectory | awk '{print $2}')
+    else
+        REAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+    fi
+    REAL_USER="$SUDO_USER"
+else
+    REAL_HOME="$HOME"
+    REAL_USER="$(whoami)"
+fi
+
+# ------------------------------------------------------------------------------
 # Package Manager Setup
 # ------------------------------------------------------------------------------
 
@@ -83,7 +99,7 @@ fi
 print_section "Installing core tools (Zsh, Git, cURL)"
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    sudo apt install -y zsh git curl
+    sudo apt install -y zsh git curl unzip
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     brew install zsh git curl
 fi
@@ -194,6 +210,43 @@ fi
 print_success "eza installed"
 
 # ------------------------------------------------------------------------------
+# Nerd Fonts (required for eza icons)
+# ------------------------------------------------------------------------------
+
+print_section "Installing Nerd Fonts"
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    FONT_DIR="$REAL_HOME/.local/share/fonts"
+    mkdir -p "$FONT_DIR"
+    [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.local"
+    
+    if [[ ! -f "$FONT_DIR/JetBrainsMonoNerdFont-Regular.ttf" ]]; then
+        print_info "Downloading JetBrains Mono Nerd Font..."
+        curl -fLo "/tmp/JetBrainsMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
+        unzip -o /tmp/JetBrainsMono.zip -d "$FONT_DIR"
+        rm /tmp/JetBrainsMono.zip
+        
+        # Update font cache
+        fc-cache -fv "$FONT_DIR" >/dev/null 2>&1
+        [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$FONT_DIR"
+        print_success "JetBrains Mono Nerd Font installed"
+    else
+        print_success "Nerd Font already installed"
+    fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Use Homebrew cask for fonts on macOS
+    if ! brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
+        brew tap homebrew/cask-fonts 2>/dev/null || true
+        brew install --cask font-jetbrains-mono-nerd-font
+        print_success "JetBrains Mono Nerd Font installed"
+    else
+        print_success "Nerd Font already installed"
+    fi
+fi
+
+print_warning "Remember to set your terminal font to 'JetBrainsMono Nerd Font'"
+
+# ------------------------------------------------------------------------------
 # zoxide (smart cd replacement)
 # ------------------------------------------------------------------------------
 
@@ -249,19 +302,6 @@ nvm alias default 'lts/*'
 # ------------------------------------------------------------------------------
 
 print_section "Setting up dotfiles"
-
-# Determine the real user's home directory (handles sudo case)
-if [[ -n "$SUDO_USER" ]]; then
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        REAL_HOME=$(dscl . -read /Users/"$SUDO_USER" NFSHomeDirectory | awk '{print $2}')
-    else
-        REAL_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
-    fi
-    REAL_USER="$SUDO_USER"
-else
-    REAL_HOME="$HOME"
-    REAL_USER="$(whoami)"
-fi
 
 DOTFILES_DIR="$REAL_HOME/dotfiles"
 
@@ -529,10 +569,20 @@ print_section "Setup Complete!"
 echo ""
 echo "Next steps:"
 echo "  1. Restart your terminal or run: exec zsh"
-echo "  2. Verify SSH keys: ssh-add -l"
-echo "  3. Test SSH connections:"
-echo "       ssh -T git@github.com"
-echo "       ssh -T git@git.ein-softworks.com"
+echo "  2. Set your terminal font to 'JetBrainsMono Nerd Font'"
+echo ""
+echo "     How to change terminal font:"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "       iTerm2:       Preferences → Profiles → Text → Font"
+    echo "       Terminal.app: Preferences → Profiles → Font → Change"
+else
+    echo "       GNOME Terminal: ☰ → Preferences → Profile → Custom font"
+    echo "       Konsole:        Settings → Edit Profile → Appearance → Font"
+    echo "       Alacritty:      Edit ~/.config/alacritty/alacritty.yml"
+fi
+echo ""
+echo "  3. Verify SSH keys: ssh-add -l"
+echo "  4. Test SSH: ssh -T git@github.com"
 echo ""
 
 # Show any warnings

@@ -82,8 +82,9 @@ The script will:
 After installation:
 
 1. Restart your terminal or run `exec zsh`
-2. Verify SSH keys: `ssh-add -l`
-3. Test connections:
+2. **Set your terminal font to "JetBrainsMono Nerd Font"** (required for icons)
+3. Verify SSH keys: `ssh-add -l`
+4. Test connections:
    ```bash
    ssh -T git@github.com
    ssh -T git@git.ein-softworks.com
