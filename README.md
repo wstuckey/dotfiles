@@ -17,7 +17,6 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/wstuckey/dotfiles/main/s
 | **Git**           | Version control                        |
 | **Python + pipx** | Python and isolated package manager    |
 | **OpenJDK 17**    | Java runtime                           |
-| **Neovim**        | Text editor (with full IDE config)     |
 | **ripgrep + fd**  | Fast search tools (for Telescope)      | f   |
 | **eza**           | Modern replacement for `ls` and `tree` |
 | **zoxide**        | Smarter `cd` that learns your habits   |
@@ -32,18 +31,12 @@ dotfiles/
 ├── .zshrc                # Zsh configuration
 ├── .zshrc.work           # Work-specific config (optional)
 ├── .gitignore            # Excludes SSH private keys
-├── ssh/
-│   ├── config            # SSH config (symlinked to ~/.ssh/config)
-│   ├── id_personal       # Your personal SSH key (not committed)
-│   ├── id_personal.pub
-│   ├── id_work           # Your work SSH key (not committed)
-│   └── id_work.pub
-└── nvim/                 # Neovim configuration (symlinked to ~/.config/nvim)
-    ├── init.lua
-    ├── lazy-lock.json    # Plugin version lock file
-    └── lua/
-        ├── config/       # Core configuration
-        └── plugins/      # Plugin configurations
+└── ssh/
+    ├── config            # SSH config (symlinked to ~/.ssh/config)
+    ├── id_personal       # Your personal SSH key (not committed)
+    ├── id_personal.pub
+    ├── id_work           # Your work SSH key (not committed)
+    └── id_work.pub
 ```
 
 ## SSH Key Setup
@@ -127,13 +120,6 @@ ln -sf ~/dotfiles/ssh/config ~/.ssh/config
 cp ~/dotfiles/ssh/id_* ~/.ssh/
 chmod 600 ~/.ssh/id_personal ~/.ssh/id_work
 chmod 644 ~/.ssh/id_personal.pub ~/.ssh/id_work.pub
-
-# Set up Neovim config
-mkdir -p ~/.config
-ln -sf ~/dotfiles/nvim ~/.config/nvim
-
-# Install Neovim plugins
-nvim --headless "+Lazy! sync" +qa
 
 # (Optional) Copy work config
 cp ~/dotfiles/.zshrc.work ~/.zshrc.work

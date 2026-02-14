@@ -9,7 +9,6 @@
 # - Python + pipx
 # - Node.js via NVM
 # - OpenJDK 17
-# - Neovim
 # - SSH keys and config
 # - Dotfiles symlinks
 #
@@ -52,7 +51,7 @@ command_exists() {
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "This script requires sudo privileges for package installation."
     sudo -v
-    
+
     # Keep sudo alive throughout the script
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 fi
@@ -144,50 +143,6 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Neovim
-# ------------------------------------------------------------------------------
-
-print_section "Installing Neovim"
-
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    NVIM_VERSION="v0.10.2"
-    if [[ -d "/opt/nvim" ]]; then
-        print_success "Neovim already installed"
-    else
-        print_info "Downloading Neovim ${NVIM_VERSION}..."
-        curl -LO "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux64.tar.gz"
-        sudo rm -rf /opt/nvim
-        sudo tar -C /opt -xzf nvim-linux64.tar.gz
-        sudo mv /opt/nvim-linux64 /opt/nvim
-        rm nvim-linux64.tar.gz
-        print_success "Neovim installed to /opt/nvim"
-    fi
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    if command_exists nvim; then
-        print_success "Neovim already installed"
-    else
-        brew install neovim
-        print_success "Neovim installed via Homebrew"
-    fi
-fi
-
-# Install Neovim dependencies
-print_info "Installing Neovim dependencies..."
-
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # ripgrep and fd for Telescope
-    sudo apt install -y ripgrep fd-find
-    # Create fd symlink (Ubuntu names it fdfind)
-    if [[ -x "$(command -v fdfind)" ]] && [[ ! -x "$(command -v fd)" ]]; then
-        sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
-    fi
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    brew install ripgrep fd
-fi
-
-print_success "Neovim dependencies installed"
-
-# ------------------------------------------------------------------------------
 # eza (modern ls replacement)
 # ------------------------------------------------------------------------------
 
@@ -219,13 +174,13 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     FONT_DIR="$REAL_HOME/.local/share/fonts"
     mkdir -p "$FONT_DIR"
     [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.local"
-    
+
     if [[ ! -f "$FONT_DIR/JetBrainsMonoNerdFont-Regular.ttf" ]]; then
         print_info "Downloading JetBrains Mono Nerd Font..."
         curl -fLo "/tmp/JetBrainsMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
         unzip -o /tmp/JetBrainsMono.zip -d "$FONT_DIR"
         rm /tmp/JetBrainsMono.zip
-        
+
         # Update font cache
         fc-cache -fv "$FONT_DIR" >/dev/null 2>&1
         [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$FONT_DIR"
@@ -349,54 +304,6 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# Neovim Configuration
-# ------------------------------------------------------------------------------
-
-print_section "Setting up Neovim configuration"
-
-NVIM_CONFIG_DIR="$REAL_HOME/.config/nvim"
-DOTFILES_NVIM_DIR="$DOTFILES_DIR/nvim"
-
-# Create ~/.config if it doesn't exist
-mkdir -p "$REAL_HOME/.config"
-[[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.config"
-
-if [[ -d "$DOTFILES_NVIM_DIR" ]]; then
-    # Backup existing nvim config if it exists and isn't a symlink
-    if [[ -d "$NVIM_CONFIG_DIR" && ! -L "$NVIM_CONFIG_DIR" ]]; then
-        print_info "Backing up existing Neovim config to nvim.backup"
-        mv "$NVIM_CONFIG_DIR" "$REAL_HOME/.config/nvim.backup"
-    elif [[ -L "$NVIM_CONFIG_DIR" ]]; then
-        # Remove existing symlink
-        rm "$NVIM_CONFIG_DIR"
-    fi
-    
-    # Create symlink
-    ln -sf "$DOTFILES_NVIM_DIR" "$NVIM_CONFIG_DIR"
-    [[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$NVIM_CONFIG_DIR"
-    print_success "Symlinked Neovim config"
-    
-    # Install plugins on first run (as the real user, not root)
-    print_info "Installing Neovim plugins (this may take a moment)..."
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        NVIM_CMD="/opt/nvim/bin/nvim"
-    else
-        NVIM_CMD="nvim"
-    fi
-    
-    if [[ -n "$SUDO_USER" ]]; then
-        sudo -u "$SUDO_USER" "$NVIM_CMD" --headless "+Lazy! sync" +qa 2>/dev/null || true
-    else
-        "$NVIM_CMD" --headless "+Lazy! sync" +qa 2>/dev/null || true
-    fi
-    print_success "Neovim plugins installed"
-else
-    print_warning "Neovim config not found in dotfiles. Skipping."
-    echo "  Expected: $DOTFILES_NVIM_DIR"
-    echo "  Copy your nvim config there and re-run setup."
-fi
-
-# ------------------------------------------------------------------------------
 # SSH Setup
 # ------------------------------------------------------------------------------
 
@@ -448,13 +355,13 @@ if [[ ${#SSH_KEYS_NEEDED[@]} -gt 0 ]]; then
     echo ""
     read -p "Press Enter once you've added the keys (or 's' to skip): " -r
     echo ""
-    
+
     if [[ ! $REPLY =~ ^[Ss]$ ]]; then
         # Re-check for keys
         SSH_KEYS_NEEDED=()
         [[ ! -f "$DOTFILES_SSH_DIR/id_personal" ]] && SSH_KEYS_NEEDED+=("id_personal")
         [[ ! -f "$DOTFILES_SSH_DIR/id_work" ]] && SSH_KEYS_NEEDED+=("id_work")
-        
+
         if [[ ${#SSH_KEYS_NEEDED[@]} -gt 0 ]]; then
             print_warning "Keys still missing. Skipping SSH key setup."
         fi
@@ -466,7 +373,7 @@ setup_ssh_key() {
     local key_name="$1"
     local src="$DOTFILES_SSH_DIR/$key_name"
     local dest="$SSH_DIR/$key_name"
-    
+
     if [[ -f "$src" ]]; then
         cp "$src" "$dest"
         chmod 600 "$dest"
@@ -481,7 +388,7 @@ setup_ssh_pubkey() {
     local key_name="$1"
     local src="$DOTFILES_SSH_DIR/$key_name"
     local dest="$SSH_DIR/$key_name"
-    
+
     if [[ -f "$src" ]]; then
         cp "$src" "$dest"
         chmod 644 "$dest"
@@ -509,7 +416,7 @@ fi
 add_key_to_agent() {
     local key="$SSH_DIR/$1"
     [[ -f "$key" ]] || return 0  # Return success if key doesn't exist
-    
+
     if [[ "$OSTYPE" == darwin* ]]; then
         ssh-add --apple-use-keychain "$key" 2>/dev/null && print_success "Added $1 to SSH agent (with keychain)"
     else
@@ -537,7 +444,7 @@ fi
 if [[ "$CURRENT_SHELL" != *"zsh"* ]]; then
     ZSH_PATH="$(which zsh)"
     print_info "Changing default shell to: $ZSH_PATH"
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS - chsh requires interactive password, inform user
         print_warning "macOS requires your password to change the default shell."
@@ -550,7 +457,7 @@ if [[ "$CURRENT_SHELL" != *"zsh"* ]]; then
         # Linux
         chsh -s "$ZSH_PATH" "$REAL_USER"
     fi
-    
+
     if [[ $? -eq 0 ]]; then
         print_success "Default shell changed to Zsh for $REAL_USER"
     else

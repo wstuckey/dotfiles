@@ -22,12 +22,9 @@ source "$ZSH/oh-my-zsh.sh"
 # Environment Variables
 # ----------------------------------------------
 
-export EDITOR='nvim'
-export VISUAL='nvim'
+export EDITOR='nano'
+export VISUAL='code --wait'
 export PATH="$HOME/.local/bin:$PATH"
-
-# Neovim (if installed to /opt)
-[[ -d "/opt/nvim/bin" ]] && export PATH="/opt/nvim/bin:$PATH"
 
 # Android SDK (if exists)
 if [[ -d "$HOME/Library/Android/sdk" ]]; then
@@ -114,10 +111,6 @@ alias refresh="source ~/.zshrc"
 alias zshrc="$EDITOR ~/.zshrc"
 alias sshconfig="$EDITOR ~/.ssh/config"
 alias dotfiles="cd ~/dotfiles"
-
-# Neovim
-alias vi="nvim"
-alias vim="nvim"
 
 # Navigation
 alias ..="cd .."
@@ -224,7 +217,6 @@ aliases() {
   AVAILABLE ALIASES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   EDITOR:
-    vi, vim        → nvim
     zshrc          → Edit ~/.zshrc
     sshconfig      → Edit ~/.ssh/config
     refresh        → Reload .zshrc
