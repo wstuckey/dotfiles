@@ -76,9 +76,9 @@ Host scott104
 # Build Machines
 # ==============================================
 
-Host new-scbuildmachine
-  HostName 10.28.18.100
-  User root
+Host scbuildmachine
+  HostName 10.28.22.29
+  User wstuckey
   Port 22
   IdentityFile ~/.ssh/id_work
 
@@ -88,42 +88,57 @@ Host sectoolsmachine
   Port 22
   IdentityFile ~/.ssh/id_work
 
+Host embeddedsandbox
+  HostName 10.28.22.23
+  User root
+  Port 22
+  IdentityFile ~/.ssh/id_work
+
+Host uisandbox
+  HostName 10.28.24.69
+  User wstuckey
+  Port 22
+  IdentityFile ~/.ssh/id_work
+  ServerAliveInterval 60
+  ServerAliveCountMax 120
+
 Host old-scbuildmachine
-  HostName 10.28.22.29
+  HostName 10.28.18.100
   User wstuckey
   Port 22
   IdentityFile ~/.ssh/id_work
 
-Host old-scbuildmachine1
-  HostName 10.28.22.27
+Host twc-hydra
+  HostName 10.28.22.22
   User wstuckey
   Port 22
   IdentityFile ~/.ssh/id_work
+  PubkeyAcceptedAlgorithms ssh-rsa
 
 # ==============================================
 # Virtual Machines
 # ==============================================
 
 Host vm-scbuild
-  HostName 10.28.18.101
+  HostName 10.28.22.18
   User vmadmin
   Port 22
   IdentityFile ~/.ssh/id_work
 
 Host vm-secbuild
-  HostName 10.28.18.102
+  HostName 10.28.22.19
   User vmadmin
   Port 22
   IdentityFile ~/.ssh/id_work
 
 Host vm-mhbuild
-  HostName 10.28.18.103
+  HostName 10.28.22.20
   User vmadmin
   Port 22
   IdentityFile ~/.ssh/id_work
 
 Host vm-s400build
-  HostName 10.28.18.104
+  HostName 10.28.22.21
   User vmadmin
   Port 22
   IdentityFile ~/.ssh/id_work
