@@ -14,13 +14,13 @@ Host github.com
   IdentityFile ~/.ssh/id_personal
   IdentitiesOnly yes
 
-Host ssh.ein-softworks.com
+Host big-server
   Hostname ssh.ein-softworks.com
   Port 30141
   User harrison
   IdentityFile ~/.ssh/id_personal
 
-Host ssh.maybe.zone
+Host little-server
   Hostname ssh.maybe.zone
   Port 22
   User harrison
