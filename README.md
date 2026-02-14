@@ -10,19 +10,19 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/wstuckey/dotfiles/main/s
 
 ## What Gets Installed
 
-| Tool | Description |
-|------|-------------|
-| **Zsh** | Shell |
-| **Oh My Zsh** | Zsh framework with plugins |
-| **Git** | Version control |
-| **Python + pipx** | Python and isolated package manager |
-| **OpenJDK 17** | Java runtime |
-| **Neovim** | Text editor (with full IDE config) |
-| **ripgrep + fd** | Fast search tools (for Telescope) |
-| **eza** | Modern replacement for `ls` and `tree` |
-| **zoxide** | Smarter `cd` that learns your habits |
-| **tmux** | Terminal multiplexer |
-| **NVM + Node.js** | Node version manager with LTS |
+| Tool              | Description                            |
+| ----------------- | -------------------------------------- | --- |
+| **Zsh**           | Shell                                  |
+| **Oh My Zsh**     | Zsh framework with plugins             |
+| **Git**           | Version control                        |
+| **Python + pipx** | Python and isolated package manager    |
+| **OpenJDK 17**    | Java runtime                           |
+| **Neovim**        | Text editor (with full IDE config)     |
+| **ripgrep + fd**  | Fast search tools (for Telescope)      | f   |
+| **eza**           | Modern replacement for `ls` and `tree` |
+| **zoxide**        | Smarter `cd` that learns your habits   |
+| **tmux**          | Terminal multiplexer                   |
+| **NVM + Node.js** | Node version manager with LTS          |
 
 ## Repository Structure
 
@@ -65,6 +65,7 @@ cp ~/.ssh/id_work.pub ~/dotfiles/ssh/
 3. Press Enter to continue
 
 The script will:
+
 - Copy keys to `~/.ssh/` with correct permissions (600 for private, 644 for public)
 - Symlink `ssh/config` to `~/.ssh/config`
 - Add keys to the SSH agent
@@ -153,25 +154,15 @@ source ~/.zshrc
 
 After setup, these commands are available:
 
-| Command | Description |
-|---------|-------------|
-| `aliases` | Show all available aliases |
-| `lsaliases` | Show work-specific aliases (if enabled) |
-| `tmux-help` | Show tmux cheatsheet |
-| `z <path>` | Smart cd (zoxide) |
-| `zi` | Interactive directory picker |
-| `ll` | List files with details (eza) |
-| `lt` | Tree view (eza) |
-| `dotfiles` | cd to ~/dotfiles |
-| `dotfiles-update` | Pull latest and refresh |
-| `refresh` | Reload .zshrc |
-
-## Automatic Update Check
-
-The shell automatically checks for dotfiles updates once per day (in the background, non-blocking). If updates are available, you'll see:
-
-```
-⚠️  Dotfiles update available! Run: cd ~/dotfiles && git pull && refresh
-```
-
-Or just run: `dotfiles-update`
+| Command           | Description                             |
+| ----------------- | --------------------------------------- |
+| `aliases`         | Show all available aliases              |
+| `lsaliases`       | Show work-specific aliases (if enabled) |
+| `tmux-help`       | Show tmux cheatsheet                    |
+| `z <path>`        | Smart cd (zoxide)                       |
+| `zi`              | Interactive directory picker            |
+| `ll`              | List files with details (eza)           |
+| `lt`              | Tree view (eza)                         |
+| `dotfiles`        | cd to ~/dotfiles                        |
+| `dotfiles-update` | Pull latest and refresh                 |
+| `refresh`         | Reload .zshrc                           |

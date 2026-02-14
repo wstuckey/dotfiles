@@ -4,52 +4,6 @@
 # ==============================================
 
 # ----------------------------------------------
-# Dotfiles Update Check (runs in background)
-# ----------------------------------------------
-
-_dotfiles_check_updates() {
-    local dotfiles_dir="$HOME/dotfiles"
-    local cache_file="$HOME/.cache/dotfiles_update_check"
-    local cache_max_age=86400  # 24 hours in seconds
-    
-    [[ -d "$dotfiles_dir/.git" ]] || return
-    
-    # Create cache directory if needed
-    mkdir -p "$HOME/.cache"
-    
-    # Check if we need to fetch (only once per day)
-    local now=$(date +%s)
-    local last_check=0
-    [[ -f "$cache_file" ]] && last_check=$(cat "$cache_file" 2>/dev/null | head -1)
-    
-    if (( now - last_check > cache_max_age )); then
-        # Fetch in background and check status
-        (
-            cd "$dotfiles_dir"
-            git fetch origin main 2>/dev/null
-            
-            local local_head=$(git rev-parse HEAD 2>/dev/null)
-            local remote_head=$(git rev-parse origin/main 2>/dev/null)
-            
-            echo "$now" > "$cache_file"
-            if [[ "$local_head" != "$remote_head" ]] && [[ -n "$remote_head" ]]; then
-                echo "outdated" >> "$cache_file"
-            else
-                echo "current" >> "$cache_file"
-            fi
-        ) &>/dev/null &
-    fi
-    
-    # Show warning if outdated (from previous check)
-    if [[ -f "$cache_file" ]] && grep -q "outdated" "$cache_file" 2>/dev/null; then
-        echo "⚠️  Dotfiles update available! Run: cd ~/dotfiles && git pull && refresh"
-    fi
-}
-
-# Run check (non-blocking)
-_dotfiles_check_updates
-
-# ----------------------------------------------
 # Oh My ZSH Configuration
 # ----------------------------------------------
 
@@ -134,14 +88,14 @@ npx() {
 _load_ssh_keys() {
     # Only run if ssh-agent is available
     command -v ssh-add &>/dev/null || return
-    
+
     local keys=("$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_personal" "$HOME/.ssh/id_work")
     local loaded=$(ssh-add -l 2>/dev/null)
-    
+
     for key in "${keys[@]}"; do
         [[ -f "$key" ]] || continue
         echo "$loaded" | grep -q "$(basename "$key")" && continue
-        
+
         if [[ "$OSTYPE" == darwin* ]]; then
             ssh-add --apple-use-keychain "$key" 2>/dev/null
         else
@@ -160,7 +114,6 @@ alias refresh="source ~/.zshrc"
 alias zshrc="$EDITOR ~/.zshrc"
 alias sshconfig="$EDITOR ~/.ssh/config"
 alias dotfiles="cd ~/dotfiles"
-alias dotfiles-update="cd ~/dotfiles && git pull && refresh"
 
 # Neovim
 alias vi="nvim"
@@ -288,13 +241,12 @@ aliases() {
 
   DOTFILES:
     dotfiles       → cd ~/dotfiles
-    dotfiles-update → Pull latest and refresh
 
   UTILITIES:
     rsync          → With progress
     tmux-help      → Show tmux cheatsheet
     update-all     → Update system packages
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     [[ $(typeset -f lsaliases) ]] && echo "\n  Run 'lsaliases' for work-specific aliases"
 }
