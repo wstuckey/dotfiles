@@ -8,20 +8,21 @@ Automated setup script for a development environment on macOS and Linux.
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/wstuckey/dotfiles/main/setup.sh)"
 ```
 
+> **Note:** The setup script clones this repo via SSH (`git@github.com:wstuckey/dotfiles.git`), so you'll need your SSH keys registered with GitHub before running it. See [SSH Key Setup](#ssh-key-setup) below.
+
 ## What Gets Installed
 
-| Tool              | Description                            |
-| ----------------- | -------------------------------------- | --- |
-| **Zsh**           | Shell                                  |
-| **Oh My Zsh**     | Zsh framework with plugins             |
-| **Git**           | Version control                        |
-| **Python + pipx** | Python and isolated package manager    |
-| **OpenJDK 17**    | Java runtime                           |
-| **ripgrep + fd**  | Fast search tools (for Telescope)      | f   |
-| **eza**           | Modern replacement for `ls` and `tree` |
-| **zoxide**        | Smarter `cd` that learns your habits   |
-| **tmux**          | Terminal multiplexer                   |
-| **NVM + Node.js** | Node version manager with LTS          |
+| Tool | Description |
+| --- | --- |
+| **Zsh** | Shell |
+| **Oh My Zsh** | Zsh framework with plugins |
+| **Git** | Version control |
+| **Python + pipx** | Python and isolated package manager |
+| **OpenJDK 17** | Java runtime |
+| **eza** | Modern replacement for `ls` and `tree` |
+| **zoxide** | Smarter `cd` that learns your habits |
+| **tmux** | Terminal multiplexer |
+| **NVM + Node.js** | Node version manager with LTS |
 
 ## Repository Structure
 
@@ -65,7 +66,7 @@ The script will:
 
 ### Moving to a New Machine
 
-1. Clone dotfiles: `git clone https://github.com/wstuckey/dotfiles.git ~/dotfiles`
+1. Clone dotfiles: `git clone git@github.com:wstuckey/dotfiles.git ~/dotfiles`
 2. Copy your SSH keys to `~/dotfiles/ssh/` (via USB, secure transfer, etc.)
 3. Run `./setup.sh`
 
@@ -76,9 +77,8 @@ The script will:
 After installation:
 
 1. Restart your terminal or run `exec zsh`
-2. **Set your terminal font to "JetBrainsMono Nerd Font"** (required for icons)
-3. Verify SSH keys: `ssh-add -l`
-4. Test connections:
+2. Verify SSH keys: `ssh-add -l`
+3. Test connections:
    ```bash
    ssh -T git@github.com
    ssh -T git@git.ein-softworks.com
@@ -109,7 +109,7 @@ If you prefer to install manually:
 
 ```bash
 # Clone the repo
-git clone https://github.com/wstuckey/dotfiles.git ~/dotfiles
+git clone git@github.com:wstuckey/dotfiles.git ~/dotfiles
 
 # Symlink .zshrc
 ln -sf ~/dotfiles/.zshrc ~/.zshrc
@@ -140,15 +140,14 @@ source ~/.zshrc
 
 After setup, these commands are available:
 
-| Command           | Description                             |
-| ----------------- | --------------------------------------- |
-| `aliases`         | Show all available aliases              |
-| `lsaliases`       | Show work-specific aliases (if enabled) |
-| `tmux-help`       | Show tmux cheatsheet                    |
-| `z <path>`        | Smart cd (zoxide)                       |
-| `zi`              | Interactive directory picker            |
-| `ll`              | List files with details (eza)           |
-| `lt`              | Tree view (eza)                         |
-| `dotfiles`        | cd to ~/dotfiles                        |
-| `dotfiles-update` | Pull latest and refresh                 |
-| `refresh`         | Reload .zshrc                           |
+| Command | Description |
+| --- | --- |
+| `aliases` | Show all available aliases |
+| `lsaliases` | Show work-specific aliases (if enabled) |
+| `tmux-help` | Show tmux cheatsheet |
+| `z <path>` | Smart cd (zoxide) |
+| `zi` | Interactive directory picker |
+| `ll` | List files with details (eza) |
+| `lt` | Tree view (eza) |
+| `dotfiles` | cd to ~/dotfiles |
+| `refresh` | Reload .zshrc |

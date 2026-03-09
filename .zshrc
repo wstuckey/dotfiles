@@ -83,7 +83,7 @@ npx() {
 # ----------------------------------------------
 
 _load_ssh_keys() {
-    # Only run if ssh-agent is available
+    # Only run if ssh-add is available
     command -v ssh-add &>/dev/null || return
 
     local keys=("$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_personal" "$HOME/.ssh/id_work")
@@ -91,7 +91,10 @@ _load_ssh_keys() {
 
     for key in "${keys[@]}"; do
         [[ -f "$key" ]] || continue
-        echo "$loaded" | grep -q "$(basename "$key")" && continue
+
+        # Compare fingerprints instead of filenames
+        local fp=$(ssh-keygen -lf "$key" 2>/dev/null | awk '{print $2}')
+        [[ -n "$fp" ]] && echo "$loaded" | grep -q "$fp" && continue
 
         if [[ "$OSTYPE" == darwin* ]]; then
             ssh-add --apple-use-keychain "$key" 2>/dev/null
@@ -242,3 +245,27 @@ aliases() {
 
     [[ $(typeset -f lsaliases) ]] && echo "\n  Run 'lsaliases' for work-specific aliases"
 }
+
+# ----------------------------------------------
+# Weekly update check notice (Pop!_OS only)
+# ----------------------------------------------
+if [[ -f /etc/os-release ]] && grep -qi 'pop' /etc/os-release; then
+    if [[ -f "$HOME/.local/share/update-check-status" ]]; then
+        source "$HOME/.local/share/update-check-status"
+        echo ""
+        echo -e "\033[1;33m── Updates Available ──\033[0m"
+        if [[ "$APT_COUNT" -gt 0 ]]; then
+            echo -e "\033[33m$APT_COUNT apt package(s) upgradable:\033[0m"
+            echo "$PKG_NAMES" | head -10 | sed 's/^/  /'
+            [[ "$APT_COUNT" -gt 10 ]] && echo "  …and $((APT_COUNT - 10)) more"
+            echo -e "\033[1mRun:\033[0m sudo apt upgrade"
+        fi
+        if echo "$POP_MSG" | grep -q "⬆"; then
+            echo ""
+            echo -e "\033[33m$POP_MSG\033[0m"
+            echo -e "\033[1mRun:\033[0m pop-upgrade release upgrade"
+        fi
+        echo -e "\033[1;33m───────────────────────\033[0m"
+        echo ""
+    fi
+fi

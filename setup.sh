@@ -48,13 +48,24 @@ command_exists() {
 # Sudo Setup (Linux only)
 # ------------------------------------------------------------------------------
 
+SUDO_PID=""
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo "This script requires sudo privileges for package installation."
     sudo -v
 
     # Keep sudo alive throughout the script
     while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+    SUDO_PID=$!
 fi
+
+# Clean up sudo keepalive on exit
+cleanup() {
+    if [[ -n "$SUDO_PID" ]]; then
+        kill "$SUDO_PID" 2>/dev/null
+    fi
+}
+trap cleanup EXIT
 
 # ------------------------------------------------------------------------------
 # Determine Real User (handles sudo case)
@@ -109,10 +120,11 @@ fi
 
 print_section "Installing Oh My Zsh"
 
-if [[ -d "$HOME/.oh-my-zsh" ]]; then
+if [[ -d "$REAL_HOME/.oh-my-zsh" ]]; then
     print_success "Oh My Zsh already installed"
 else
-    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    # KEEP_ZSHRC prevents OMZ from clobbering an existing .zshrc
+    KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
 # ------------------------------------------------------------------------------
@@ -149,7 +161,6 @@ fi
 print_section "Installing eza"
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    # eza requires adding the repository on Ubuntu
     if ! command_exists eza; then
         sudo mkdir -p /etc/apt/keyrings
         wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
@@ -163,43 +174,6 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 print_success "eza installed"
-
-# ------------------------------------------------------------------------------
-# Nerd Fonts (required for eza icons)
-# ------------------------------------------------------------------------------
-
-print_section "Installing Nerd Fonts"
-
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    FONT_DIR="$REAL_HOME/.local/share/fonts"
-    mkdir -p "$FONT_DIR"
-    [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$REAL_HOME/.local"
-
-    if [[ ! -f "$FONT_DIR/JetBrainsMonoNerdFont-Regular.ttf" ]]; then
-        print_info "Downloading JetBrains Mono Nerd Font..."
-        curl -fLo "/tmp/JetBrainsMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
-        unzip -o /tmp/JetBrainsMono.zip -d "$FONT_DIR"
-        rm /tmp/JetBrainsMono.zip
-
-        # Update font cache
-        fc-cache -fv "$FONT_DIR" >/dev/null 2>&1
-        [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$FONT_DIR"
-        print_success "JetBrains Mono Nerd Font installed"
-    else
-        print_success "Nerd Font already installed"
-    fi
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    # Use Homebrew cask for fonts on macOS
-    if ! brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
-        brew tap homebrew/cask-fonts 2>/dev/null || true
-        brew install --cask font-jetbrains-mono-nerd-font
-        print_success "JetBrains Mono Nerd Font installed"
-    else
-        print_success "Nerd Font already installed"
-    fi
-fi
-
-print_warning "Remember to set your terminal font to 'JetBrainsMono Nerd Font'"
 
 # ------------------------------------------------------------------------------
 # zoxide (smart cd replacement)
@@ -237,7 +211,7 @@ print_success "tmux installed"
 
 print_section "Installing NVM and Node.js"
 
-export NVM_DIR="$HOME/.nvm"
+export NVM_DIR="$REAL_HOME/.nvm"
 
 if [[ -d "$NVM_DIR" ]]; then
     print_success "NVM already installed"
@@ -265,7 +239,7 @@ if [[ -d "$DOTFILES_DIR" ]]; then
     cd "$DOTFILES_DIR" && git pull || true
 else
     print_info "Cloning dotfiles..."
-    git clone https://github.com/wstuckey/dotfiles.git "$DOTFILES_DIR"
+    git clone git@github.com:wstuckey/dotfiles.git "$DOTFILES_DIR"
     # Fix ownership if running as root
     [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$DOTFILES_DIR"
 fi
@@ -329,6 +303,12 @@ if [[ -f "$DOTFILES_SSH_DIR/config" ]]; then
     print_success "Symlinked SSH config"
 fi
 
+# Fix known filename issues (leading space in id_personal)
+if [[ -f "$DOTFILES_SSH_DIR/ id_personal" && ! -f "$DOTFILES_SSH_DIR/id_personal" ]]; then
+    mv "$DOTFILES_SSH_DIR/ id_personal" "$DOTFILES_SSH_DIR/id_personal"
+    print_info "Fixed filename: renamed ' id_personal' to 'id_personal'"
+fi
+
 # Check for SSH keys
 SSH_KEYS_NEEDED=()
 [[ ! -f "$DOTFILES_SSH_DIR/id_personal" ]] && SSH_KEYS_NEEDED+=("id_personal")
@@ -379,9 +359,7 @@ setup_ssh_key() {
         chmod 600 "$dest"
         [[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$dest"
         print_success "Installed $key_name"
-        return 0
     fi
-    return 0  # Return success even if key doesn't exist
 }
 
 setup_ssh_pubkey() {
@@ -395,7 +373,6 @@ setup_ssh_pubkey() {
         [[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$dest"
         print_success "Installed $key_name"
     fi
-    return 0  # Always return success
 }
 
 # Install keys (skip silently if not present)
@@ -415,14 +392,14 @@ fi
 # Add keys to agent (silently skip if not present)
 add_key_to_agent() {
     local key="$SSH_DIR/$1"
-    [[ -f "$key" ]] || return 0  # Return success if key doesn't exist
+    [[ -f "$key" ]] || return 0
 
     if [[ "$OSTYPE" == darwin* ]]; then
         ssh-add --apple-use-keychain "$key" 2>/dev/null && print_success "Added $1 to SSH agent (with keychain)"
     else
         ssh-add "$key" 2>/dev/null && print_success "Added $1 to SSH agent"
     fi
-    return 0  # Always return success
+    return 0
 }
 
 add_key_to_agent "id_personal"
@@ -446,7 +423,6 @@ if [[ "$CURRENT_SHELL" != *"zsh"* ]]; then
     print_info "Changing default shell to: $ZSH_PATH"
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS - chsh requires interactive password, inform user
         print_warning "macOS requires your password to change the default shell."
         if [[ -n "$SUDO_USER" ]]; then
             sudo -u "$SUDO_USER" chsh -s "$ZSH_PATH"
@@ -454,7 +430,6 @@ if [[ "$CURRENT_SHELL" != *"zsh"* ]]; then
             chsh -s "$ZSH_PATH"
         fi
     else
-        # Linux
         chsh -s "$ZSH_PATH" "$REAL_USER"
     fi
 
@@ -476,20 +451,8 @@ print_section "Setup Complete!"
 echo ""
 echo "Next steps:"
 echo "  1. Restart your terminal or run: exec zsh"
-echo "  2. Set your terminal font to 'JetBrainsMono Nerd Font'"
-echo ""
-echo "     How to change terminal font:"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "       iTerm2:       Preferences → Profiles → Text → Font"
-    echo "       Terminal.app: Preferences → Profiles → Font → Change"
-else
-    echo "       GNOME Terminal: ☰ → Preferences → Profile → Custom font"
-    echo "       Konsole:        Settings → Edit Profile → Appearance → Font"
-    echo "       Alacritty:      Edit ~/.config/alacritty/alacritty.yml"
-fi
-echo ""
-echo "  3. Verify SSH keys: ssh-add -l"
-echo "  4. Test SSH: ssh -T git@github.com"
+echo "  2. Verify SSH keys: ssh-add -l"
+echo "  3. Test SSH: ssh -T git@github.com"
 echo ""
 
 # Show any warnings
