@@ -240,9 +240,16 @@ if [[ -d "$DOTFILES_DIR" ]]; then
     cd "$DOTFILES_DIR" && git pull || true
 else
     print_info "Cloning dotfiles..."
-    git clone git@github.com:wstuckey/dotfiles.git "$DOTFILES_DIR"
+    # Try SSH first, fall back to HTTPS (public repo doesn't need auth)
+    if ! git clone git@github.com:wstuckey/dotfiles.git "$DOTFILES_DIR" 2>/dev/null; then
+        print_info "SSH clone failed, falling back to HTTPS..."
+        git clone https://github.com/wstuckey/dotfiles.git "$DOTFILES_DIR"
+    fi
     # Fix ownership if running as root
     [[ -n "$SUDO_USER" ]] && chown -R "$SUDO_USER:$SUDO_USER" "$DOTFILES_DIR"
+
+    # Switch remote to SSH for future pushes (once keys are set up)
+    cd "$DOTFILES_DIR" && git remote set-url origin git@github.com:wstuckey/dotfiles.git
 fi
 
 # Backup existing .zshrc if it exists and isn't a symlink
