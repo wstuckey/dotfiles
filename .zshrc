@@ -207,6 +207,36 @@ fi
 [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 
 # ----------------------------------------------
+# Weekly update check notice (Pop!_OS only)
+# ----------------------------------------------
+if [[ -f /etc/os-release ]] && grep -qi 'pop' /etc/os-release; then
+    if [[ -f "$HOME/.local/share/update-check-status" ]]; then
+        source "$HOME/.local/share/update-check-status"
+        echo ""
+        echo -e "\033[1;33m── Updates Available ──\033[0m"
+        if [[ "$APT_COUNT" -gt 0 ]]; then
+            echo -e "\033[33m$APT_COUNT apt package(s) upgradable:\033[0m"
+            echo "$PKG_NAMES" | head -10 | sed 's/^/  /'
+            [[ "$APT_COUNT" -gt 10 ]] && echo "  …and $((APT_COUNT - 10)) more"
+            echo -e "\033[1mRun:\033[0m update-all"
+        fi
+        if echo "$POP_MSG" | grep -q "⬆"; then
+            echo ""
+            echo -e "\033[33m$POP_MSG\033[0m"
+            echo -e "\033[1mRun:\033[0m pop-upgrade release upgrade"
+        fi
+        echo -e "\033[1;33m───────────────────────\033[0m"
+        echo ""
+    fi
+fi
+
+# ----------------------------------------------
+# Disable bracketed paste
+# ----------------------------------------------
+# prevents ^[[200~ escape sequences leaking into prompt
+unset zle_bracketed_paste
+
+# ----------------------------------------------
 # Final Settings
 # ----------------------------------------------
 
@@ -245,27 +275,3 @@ aliases() {
 
     [[ $(typeset -f lsaliases) ]] && echo "\n  Run 'lsaliases' for work-specific aliases"
 }
-
-# ----------------------------------------------
-# Weekly update check notice (Pop!_OS only)
-# ----------------------------------------------
-if [[ -f /etc/os-release ]] && grep -qi 'pop' /etc/os-release; then
-    if [[ -f "$HOME/.local/share/update-check-status" ]]; then
-        source "$HOME/.local/share/update-check-status"
-        echo ""
-        echo -e "\033[1;33m── Updates Available ──\033[0m"
-        if [[ "$APT_COUNT" -gt 0 ]]; then
-            echo -e "\033[33m$APT_COUNT apt package(s) upgradable:\033[0m"
-            echo "$PKG_NAMES" | head -10 | sed 's/^/  /'
-            [[ "$APT_COUNT" -gt 10 ]] && echo "  …and $((APT_COUNT - 10)) more"
-            echo -e "\033[1mRun:\033[0m update-all"
-        fi
-        if echo "$POP_MSG" | grep -q "⬆"; then
-            echo ""
-            echo -e "\033[33m$POP_MSG\033[0m"
-            echo -e "\033[1mRun:\033[0m pop-upgrade release upgrade"
-        fi
-        echo -e "\033[1;33m───────────────────────\033[0m"
-        echo ""
-    fi
-fi
