@@ -15,3 +15,5 @@ Thumbs.db
 
 # Local overrides
 .zshrc.local
+.zshrc.work
+ssh/config.work

@@ -303,6 +303,14 @@ if [[ -f "$DOTFILES_SSH_DIR/config" ]]; then
     print_success "Symlinked SSH config"
 fi
 
+# Symlink SSH work config (if exists)
+if [[ -f "$DOTFILES_SSH_DIR/config.work" ]]; then
+    ln -sf "$DOTFILES_SSH_DIR/config.work" "$SSH_DIR/config.work"
+    chmod 600 "$SSH_DIR/config.work"
+    [[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$SSH_DIR/config.work"
+    print_success "Symlinked SSH work config"
+fi
+
 # Fix known filename issues (leading space in id_personal)
 if [[ -f "$DOTFILES_SSH_DIR/ id_personal" && ! -f "$DOTFILES_SSH_DIR/id_personal" ]]; then
     mv "$DOTFILES_SSH_DIR/ id_personal" "$DOTFILES_SSH_DIR/id_personal"
