@@ -231,12 +231,6 @@ if [[ -f /etc/os-release ]] && grep -qi 'pop' /etc/os-release; then
 fi
 
 # ----------------------------------------------
-# Disable bracketed paste
-# ----------------------------------------------
-# prevents ^[[200~ escape sequences leaking into prompt
-unset zle_bracketed_paste
-
-# ----------------------------------------------
 # Final Settings
 # ----------------------------------------------
 
