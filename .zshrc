@@ -193,7 +193,7 @@ alias tmux-help='echo "
 # ----------------------------------------------
 
 if [[ "$OSTYPE" == linux* ]]; then
-    alias update-all='sudo apt update && sudo apt upgrade -y && flatpak update -y 2>/dev/null; echo "Updates complete."'
+    alias update-all='sudo apt update && sudo apt upgrade -y && flatpak update -y 2>/dev/null; rm -f "$HOME/.local/share/update-check-status"; echo "Updates complete."'
     alias open="xdg-open"
 elif [[ "$OSTYPE" == darwin* ]]; then
     alias update-all="brew update && brew upgrade"
@@ -258,7 +258,7 @@ if [[ -f /etc/os-release ]] && grep -qi 'pop' /etc/os-release; then
             echo -e "\033[33m$APT_COUNT apt package(s) upgradable:\033[0m"
             echo "$PKG_NAMES" | head -10 | sed 's/^/  /'
             [[ "$APT_COUNT" -gt 10 ]] && echo "  …and $((APT_COUNT - 10)) more"
-            echo -e "\033[1mRun:\033[0m sudo apt upgrade"
+            echo -e "\033[1mRun:\033[0m update-all"
         fi
         if echo "$POP_MSG" | grep -q "⬆"; then
             echo ""
