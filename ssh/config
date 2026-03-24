@@ -3,6 +3,9 @@ Host *
   IgnoreUnknown UseKeychain
   UseKeychain yes
 
+# Work config (not tracked in git)
+Include ~/.ssh/config.work
+
 # ==============================================
 # Personal Hosts
 # ==============================================
@@ -24,6 +27,3 @@ Host little-server
   Port 41922
   User harrison
   IdentityFile ~/.ssh/id_personal
-
-# Work config (not tracked in git)
-Include ~/.ssh/config.work

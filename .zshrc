@@ -112,8 +112,49 @@ _load_ssh_keys
 # System
 alias refresh="source ~/.zshrc"
 alias zshrc="$EDITOR ~/.zshrc"
-alias sshconfig="$EDITOR ~/.ssh/config"
 alias dotfiles="cd ~/dotfiles"
+alias sshedit="nano ~/.ssh/config"
+[[ -f "$HOME/.ssh/config.work" ]] && alias sshworkedit="nano ~/.ssh/config.work"
+
+# SSH config listing (replaces old sshconfig alias)
+unalias sshconfig 2>/dev/null
+sshconfig() {
+    local c="\033[36m" d="\033[2m" b="\033[1m" r="\033[0m"
+    echo ""
+    echo "  ${b}${c}SSH Hosts${r}"
+    echo ""
+
+    local personal=$(grep -i '^Host ' ~/.ssh/config 2>/dev/null | awk '{print $2}' | grep -v '\*')
+    if [[ -n "$personal" ]]; then
+        echo "  ${c}personal${r}  ${personal//$'\n'/  }"
+    fi
+
+    if [[ -f "$HOME/.ssh/config.work" ]]; then
+        local section=""
+        local sites="" builds="" vms=""
+        while IFS= read -r line; do
+            if [[ "$line" == *"Work Sites"* ]]; then section="sites"
+            elif [[ "$line" == *"Build Machines"* ]]; then section="builds"
+            elif [[ "$line" == *"Virtual Machines"* ]]; then section="vms"
+            elif [[ "$line" == Host\ * ]]; then
+                local host="${line#Host }"
+                case "$section" in
+                    sites) sites+="$host  " ;;
+                    builds) builds+="$host  " ;;
+                    vms) vms+="$host  " ;;
+                esac
+            fi
+        done < ~/.ssh/config.work
+        [[ -n "$sites" ]] && echo "  ${c}sites${r}     $sites"
+        [[ -n "$builds" ]] && echo "  ${c}builds${r}    $builds"
+        [[ -n "$vms" ]] && echo "  ${c}vms${r}       $vms"
+    fi
+
+    echo ""
+    echo "  ${d}sshedit to edit personal config${r}"
+    [[ -f "$HOME/.ssh/config.work" ]] && echo "  ${d}sshworkedit to edit work config${r}"
+    echo ""
+}
 
 # Navigation
 alias ..="cd .."
@@ -239,33 +280,23 @@ unsetopt correct_all
 # aliases command - show all custom aliases
 unalias aliases 2>/dev/null
 aliases() {
-    echo "
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  AVAILABLE ALIASES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  EDITOR:
-    zshrc          → Edit ~/.zshrc
-    sshconfig      → Edit ~/.ssh/config
-    refresh        → Reload .zshrc
-
-  FILES (eza):
-    ls             → eza with icons
-    ll             → Long list
-    la             → Show hidden
-    lt, tree       → Tree view
-
-  NAVIGATION (zoxide):
-    cd / z         → Smart cd (learns your dirs)
-    zi             → Interactive directory picker
-
-  DOTFILES:
-    dotfiles       → cd ~/dotfiles
-
-  UTILITIES:
-    rsync          → With progress
-    tmux-help      → Show tmux cheatsheet
-    update-all     → Update system packages
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-    [[ $(typeset -f lsaliases) ]] && echo "\n  Run 'lsaliases' for work-specific aliases"
+    local c="\033[36m" d="\033[2m" b="\033[1m" r="\033[0m"
+    echo ""
+    echo "  ${b}${c}Aliases${r}"
+    echo ""
+    local has_work=$([[ -f "$HOME/.ssh/config.work" ]] && echo 1)
+    if [[ -n "$has_work" ]]; then
+        echo "  ${c}edit${r}   zshrc  sshedit  sshworkedit  ${c}files${r}  ls  ll  la  lt  tree"
+    else
+        echo "  ${c}edit${r}   zshrc  sshedit              ${c}files${r}  ls  ll  la  lt  tree"
+    fi
+    echo "  ${c}nav${r}    cd/z  zi  dotfiles    ${c}utils${r}  rsync  tmux-help  update-all"
+    echo "  ${c}shell${r}  refresh"
+    echo ""
+    echo "  ${d}run 'sshconfig' for all ssh hosts${r}"
+    [[ $(typeset -f lsaliases) ]] && echo "  ${d}run 'lsaliases' for work aliases${r}"
+    echo ""
 }
+
+# Show aliases on new terminal
+aliases

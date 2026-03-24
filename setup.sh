@@ -428,12 +428,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             print_warning ".zshrc.work not found in dotfiles-work"
         fi
 
-        # Symlink work SSH config
+        # Copy work SSH config (SSH Include doesn't follow symlinks)
         if [[ -f "$WORK_DIR/ssh/config.work" ]]; then
-            ln -sf "$WORK_DIR/ssh/config.work" "$SSH_DIR/config.work"
+            rm -f "$SSH_DIR/config.work"
+            cp "$WORK_DIR/ssh/config.work" "$SSH_DIR/config.work"
             chmod 600 "$SSH_DIR/config.work"
-            [[ -n "$SUDO_USER" ]] && chown -h "$SUDO_USER:$SUDO_USER" "$SSH_DIR/config.work"
-            print_success "Symlinked SSH work config"
+            [[ -n "$SUDO_USER" ]] && chown "$SUDO_USER:$SUDO_USER" "$SSH_DIR/config.work"
+            print_success "Installed SSH work config"
         else
             print_warning "ssh/config.work not found in dotfiles-work"
         fi
@@ -444,9 +445,9 @@ else
         rm "$REAL_HOME/.zshrc.work"
         print_info "Removed .zshrc.work symlink"
     fi
-    if [[ -L "$SSH_DIR/config.work" ]]; then
+    if [[ -L "$SSH_DIR/config.work" || -f "$SSH_DIR/config.work" ]]; then
         rm "$SSH_DIR/config.work"
-        print_info "Removed SSH work config symlink"
+        print_info "Removed SSH work config"
     fi
     print_success "Skipped work configuration"
 fi
