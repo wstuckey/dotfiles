@@ -114,6 +114,7 @@ alias refresh="source ~/.zshrc"
 alias zshrc="$EDITOR ~/.zshrc"
 alias dotfiles="cd ~/dotfiles"
 alias sshedit="nano ~/dotfiles/ssh/config && cp ~/dotfiles/ssh/config ~/.ssh/config && chmod 600 ~/.ssh/config"
+unalias sshworkedit 2>/dev/null
 if [[ -f "$HOME/.ssh/config.work" ]]; then
     sshworkedit() {
         nano ~/dotfiles-work/ssh/config.work && cp ~/dotfiles-work/ssh/config.work ~/.ssh/config.work && chmod 600 ~/.ssh/config.work

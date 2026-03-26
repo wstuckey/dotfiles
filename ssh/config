@@ -22,7 +22,7 @@ Host big-server
   User harrison
   IdentityFile ~/.ssh/id_personal
 
-Host little-server
+Host mini-server
   Hostname ssh.maybe.zone
   Port 41922
   User harrison
