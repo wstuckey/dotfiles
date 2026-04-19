@@ -278,16 +278,26 @@ aliases() {
     echo ""
     echo "  ${b}${c}Aliases${r}"
     echo ""
-    local has_work=$([[ -f "$HOME/.ssh/config.work" ]] && echo 1)
-    if [[ -n "$has_work" ]]; then
-        echo "  ${c}edit${r}   zshrc  sshedit  sshworkedit  ${c}files${r}  ls  ll  la  lt  tree"
+    if [[ -f "$HOME/.ssh/config.work" ]]; then
+        echo "  ${c}edit${r}     zshrc   sshedit   sshworkedit"
     else
-        echo "  ${c}edit${r}   zshrc  sshedit              ${c}files${r}  ls  ll  la  lt  tree"
+        echo "  ${c}edit${r}     zshrc   sshedit"
     fi
-    echo "  ${c}nav${r}    cd/z  zi  dotfiles    ${c}utils${r}  rsync  tmux-help  update-all"
-    echo "  ${c}shell${r}  refresh"
+    echo "  ${c}files${r}    ls   ll   la   lt   tree"
+    echo "  ${c}nav${r}      ..   ...   ....   dotfiles   cd/z   zi"
+    echo "  ${c}safety${r}   rm   cp   mv"
+    echo "  ${c}utils${r}    refresh   rsync   tmux-help   update-all"
+    if [[ -f "$HOME/.zshrc.work" ]]; then
+        echo ""
+        echo "  ${b}${c}Work Aliases${r}"
+        echo ""
+        echo "  ${c}deploy${r}   site-pushSSH   site-pushRsync   pushDebug"
+        echo "  ${c}tools${r}    genlic   hui-sync   uidd_builder   mass-hui-revert   buildDocs"
+        echo "  ${c}nav${r}      cd-feature   cd-trunk   cd-doctor"
+        echo "  ${c}node${r}     node18   node20   node21   node22   node23"
+        echo "  ${c}carto${r}    carto_sso   carto_token   carto_token_staging   carto_admin   carto_admin_staging"
+    fi
     echo ""
-    echo "  ${d}run 'sshconfig' for all ssh hosts${r}"
-    [[ $(typeset -f lsaliases) ]] && echo "  ${d}run 'lsaliases' for work aliases${r}"
+    echo "  ${d}run 'sshconfig' for ssh hosts${r}"
     echo ""
 }
