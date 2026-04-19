@@ -4,7 +4,7 @@
 # ==============================================
 
 # ----------------------------------------------
-# Oh My ZSH Configuration
+# Oh My ZSH
 # ----------------------------------------------
 
 export ZSH="$HOME/.oh-my-zsh"
@@ -25,8 +25,9 @@ source "$ZSH/oh-my-zsh.sh"
 export EDITOR='nano'
 export VISUAL='code --wait'
 export PATH="$HOME/.local/bin:$PATH"
+export AWS_PROFILE=cartographer
 
-# Android SDK (if exists)
+# Android SDK
 if [[ -d "$HOME/Library/Android/sdk" ]]; then
     export ANDROID_HOME="$HOME/Library/Android/sdk"
 elif [[ -d "$HOME/Android/Sdk" ]]; then
@@ -34,7 +35,7 @@ elif [[ -d "$HOME/Android/Sdk" ]]; then
 fi
 [[ -n "$ANDROID_HOME" ]] && export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator"
 
-# Java (detect installation)
+# Java
 if [[ "$OSTYPE" == darwin* ]]; then
     if [[ -d "/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home" ]]; then
         export JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home"
@@ -48,12 +49,12 @@ else
 fi
 
 # ----------------------------------------------
-# NVM (lazy loading for faster shell startup)
+# Tools
 # ----------------------------------------------
 
+# NVM (lazy loading for faster shell startup)
 export NVM_DIR="$HOME/.nvm"
 
-# Lazy load NVM - only initialize when first called
 nvm() {
     unset -f nvm node npm npx
     [[ -s "$NVM_DIR/nvm.sh" ]] && \. "$NVM_DIR/nvm.sh"
@@ -78,12 +79,29 @@ npx() {
     npx "$@"
 }
 
+# zoxide (smart cd replacement)
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh)"
+    alias cd="z"
+fi
+
+# eza (modern ls replacement)
+if command -v eza &>/dev/null; then
+    alias ls="eza --icons --group-directories-first"
+    alias ll="eza -la --icons --group-directories-first"
+    alias la="eza -a --icons --group-directories-first"
+    alias lt="eza --tree --icons --group-directories-first"
+    alias tree="eza --tree --icons --group-directories-first"
+else
+    alias ll="ls -lah"
+    alias la="ls -A"
+fi
+
 # ----------------------------------------------
 # SSH Keys (quiet, only if agent running)
 # ----------------------------------------------
 
 _load_ssh_keys() {
-    # Only run if ssh-add is available
     command -v ssh-add &>/dev/null || return
 
     local keys=("$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_personal" "$HOME/.ssh/id_work")
@@ -91,8 +109,6 @@ _load_ssh_keys() {
 
     for key in "${keys[@]}"; do
         [[ -f "$key" ]] || continue
-
-        # Compare fingerprints instead of filenames
         local fp=$(ssh-keygen -lf "$key" 2>/dev/null | awk '{print $2}')
         [[ -n "$fp" ]] && echo "$loaded" | grep -q "$fp" && continue
 
@@ -109,11 +125,66 @@ _load_ssh_keys
 # Aliases
 # ----------------------------------------------
 
+# Navigation
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias dotfiles="cd ~/dotfiles"
+
+# Safety
+alias rm="rm -i"
+alias cp="cp -i"
+alias mv="mv -i"
+
 # System
 alias refresh="source ~/.zshrc"
 alias zshrc="$EDITOR ~/.zshrc"
-alias dotfiles="cd ~/dotfiles"
+alias rsync="rsync -az --info=progress2"
+
+# Platform-specific
+if [[ "$OSTYPE" == linux* ]]; then
+    alias update-all='sudo apt update && sudo apt upgrade -y && flatpak update -y 2>/dev/null; rm -f "$HOME/.local/share/update-check-status"; echo "Updates complete."'
+    alias open="xdg-open"
+elif [[ "$OSTYPE" == darwin* ]]; then
+    alias update-all="brew update && brew upgrade"
+fi
+
+# tmux
+alias tmux-help='echo "
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TMUX QUICK START
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Start:          tmux
+  New session:    tmux new -s <name>
+  Attach:         tmux attach -t <name>
+  List sessions:  tmux ls
+  Kill session:   tmux kill-session -t <name>
+
+  PREFIX KEY: Ctrl+b (then release, then command)
+
+  WINDOWS (tabs):
+    c   Create window
+    n/p Next/Previous window
+    ,   Rename window
+    &   Kill window
+    0-9 Switch to window #
+
+  PANES (splits):
+    %   Split vertical
+    \"   Split horizontal
+    ←→↑↓ Navigate panes
+    x   Kill pane
+    z   Toggle zoom
+
+  OTHER:
+    d   Detach
+    ?   List keybindings
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"'
+
+# SSH editing
 alias sshedit="nano ~/dotfiles/ssh/config && cp ~/dotfiles/ssh/config ~/.ssh/config && chmod 600 ~/.ssh/config"
+
 unalias sshworkedit 2>/dev/null
 if [[ -f "$HOME/.ssh/config.work" ]]; then
     sshworkedit() {
@@ -122,7 +193,10 @@ if [[ -f "$HOME/.ssh/config.work" ]]; then
     }
 fi
 
-# SSH config listing (replaces old sshconfig alias)
+# ----------------------------------------------
+# Functions
+# ----------------------------------------------
+
 unalias sshconfig 2>/dev/null
 sshconfig() {
     local c="\033[36m" d="\033[2m" b="\033[1m" r="\033[0m"
@@ -162,90 +236,6 @@ sshconfig() {
     echo ""
 }
 
-# Navigation
-alias ..="cd .."
-alias ...="cd ../.."
-alias ....="cd ../../.."
-
-# Safety
-alias rm="rm -i"
-alias cp="cp -i"
-alias mv="mv -i"
-
-# rsync with progress
-alias rsync="rsync -az --info=progress2"
-
-# ----------------------------------------------
-# eza (modern ls replacement)
-# ----------------------------------------------
-
-if command -v eza &>/dev/null; then
-    alias ls="eza --icons --group-directories-first"
-    alias ll="eza -la --icons --group-directories-first"
-    alias la="eza -a --icons --group-directories-first"
-    alias lt="eza --tree --icons --group-directories-first"
-    alias tree="eza --tree --icons --group-directories-first"
-else
-    alias ll="ls -lah"
-    alias la="ls -A"
-fi
-
-# ----------------------------------------------
-# zoxide (smart cd replacement)
-# ----------------------------------------------
-
-if command -v zoxide &>/dev/null; then
-    eval "$(zoxide init zsh)"
-    alias cd="z"
-fi
-
-# ----------------------------------------------
-# tmux
-# ----------------------------------------------
-
-alias tmux-help='echo "
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  TMUX QUICK START
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Start:          tmux
-  New session:    tmux new -s <name>
-  Attach:         tmux attach -t <name>
-  List sessions:  tmux ls
-  Kill session:   tmux kill-session -t <name>
-
-  PREFIX KEY: Ctrl+b (then release, then command)
-
-  WINDOWS (tabs):
-    c   Create window
-    n/p Next/Previous window
-    ,   Rename window
-    &   Kill window
-    0-9 Switch to window #
-
-  PANES (splits):
-    %   Split vertical
-    \"   Split horizontal
-    ←→↑↓ Navigate panes
-    x   Kill pane
-    z   Toggle zoom
-
-  OTHER:
-    d   Detach
-    ?   List keybindings
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-"'
-
-# ----------------------------------------------
-# Platform-Specific Configuration
-# ----------------------------------------------
-
-if [[ "$OSTYPE" == linux* ]]; then
-    alias update-all='sudo apt update && sudo apt upgrade -y && flatpak update -y 2>/dev/null; rm -f "$HOME/.local/share/update-check-status"; echo "Updates complete."'
-    alias open="xdg-open"
-elif [[ "$OSTYPE" == darwin* ]]; then
-    alias update-all="brew update && brew upgrade"
-fi
-
 # ----------------------------------------------
 # Work/Local Configuration (load if exists)
 # ----------------------------------------------
@@ -254,8 +244,12 @@ fi
 [[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
 
 # ----------------------------------------------
-# Weekly update check notice (Pop!_OS only)
+# Startup
 # ----------------------------------------------
+
+unsetopt correct_all
+
+# Pop!_OS update check
 if [[ -f /etc/os-release ]] && grep -qi 'pop' /etc/os-release; then
     if [[ -f "$HOME/.local/share/update-check-status" ]]; then
         source "$HOME/.local/share/update-check-status"
@@ -277,13 +271,7 @@ if [[ -f /etc/os-release ]] && grep -qi 'pop' /etc/os-release; then
     fi
 fi
 
-# ----------------------------------------------
-# Final Settings
-# ----------------------------------------------
-
-unsetopt correct_all
-
-# aliases command - show all custom aliases
+# Alias summary
 unalias aliases 2>/dev/null
 aliases() {
     local c="\033[36m" d="\033[2m" b="\033[1m" r="\033[0m"
@@ -303,6 +291,3 @@ aliases() {
     [[ $(typeset -f lsaliases) ]] && echo "  ${d}run 'lsaliases' for work aliases${r}"
     echo ""
 }
-
-# Show aliases on new terminal
-aliases
