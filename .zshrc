@@ -295,7 +295,9 @@ aliases() {
         echo "  ${c}tools${r}    genlic   hui-sync   uidd_builder   mass-hui-revert   buildDocs"
         echo "  ${c}nav${r}      cd-feature   cd-trunk   cd-doctor"
         echo "  ${c}node${r}     node18   node20   node21   node22   node23"
-        echo "  ${c}carto${r}    carto_sso   carto_token   carto_token_staging   carto_admin   carto_admin_staging"
+        echo "  ${c}carto${r}    aws sso login  ${d}— authenticate with AWS SSO${r}"
+        echo "           cartographer_token [prod|staging]  ${d}— fetch OAuth2 token${r}"
+        echo "           cartographer_admin [--staging] ...  ${d}— run admin.sh${r}"
     fi
     echo ""
     echo "  ${d}run 'sshconfig' for ssh hosts${r}"
